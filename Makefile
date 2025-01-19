@@ -12,4 +12,4 @@ run_imgui:
 
 build_imgui:
 	rm -f ./lc3vmimgui
-	g++ -Wall -Wfatal-errors -std=c++17 ./src/lc3vmimgui.cpp ./libs/imgui/*.cpp -I"./libs/" -lSDL2 -lSDL2_image -o lc3vmimgui
+	g++ -Wall -Wfatal-errors -g -O0 -std=c++17 ./src/lc3vmwin_memory.cpp ./src/lc3vmimgui.cpp ./libs/imgui/*.cpp -I"./libs/" -L/usr/lib/x86_64-linux-gnu/debug/ -lSDL2 -lSDL2_image -o lc3vmimgui

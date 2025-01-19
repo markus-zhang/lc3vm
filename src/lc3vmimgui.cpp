@@ -1,3 +1,4 @@
+#include "lc3vmwin_memory.hpp"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <imgui/imgui.h>
@@ -22,6 +23,11 @@ int main()
     // Initialize the ImGui context
     ImGui::CreateContext();
     ImGuiSDL::Initialize(renderer, 1440, 900);
+
+    // Memory Window
+    char text[] = "abcdefghijklmnopqrstuvwxyz";
+    WindowConfig winConfig {true, 20, {800, 600}, {640, 480}, {0, 0}};
+    LC3VMMemorywindow memoryWindow = LC3VMMemorywindow(text, 26, winConfig);
 
     bool isRunning = true;
     bool isDebug = false;
@@ -71,41 +77,57 @@ int main()
         if (isDebug)
         {
             ImGui::NewFrame();
+            memoryWindow.Draw();
+            // if (!windowInitialized)
+            // {
+            //     ImGui::SetNextWindowSize(initialWindowSize, 0);
+            //     windowInitialized = true;
+            // }
+            // ImGui::GetStyle().WindowBorderSize = 2.0f;
+            // ImGui::SetNextWindowPos({0, 0});
+            // ImGui::SetNextWindowSizeConstraints(minWindowSize, initialWindowSize);
 
-            ImGui::SetNextWindowSize({800, 600}, 0);
-            ImGui::GetStyle().WindowBorderSize = 2.0f;
-            ImGui::SetNextWindowPos({0, 0});
+            // ImGui::Begin(
+            //     "ImGui Test Window 1", 
+            //     nullptr, 
+            //     // ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse
+            //     ImGuiWindowFlags_NoCollapse
+            // );
+            // // ImGui::NewFrame();
+            // // ImGui::ShowDemoWindow();
 
-            ImGui::Begin(
-                "ImGui Test Window 1", 
-                nullptr, 
-                ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse)
-            ;
-            // ImGui::NewFrame();
-            // ImGui::ShowDemoWindow();
+            // // ImGui widgets begin
+            // // ImGui::SetCursorPos({0, 0});
+            // ImVec2 currentSize = ImGui::GetWindowSize();
 
-            // ImGui widgets begin
-            // ImGui::SetCursorPos({0, 0});
+            // ImGui::PushItemWidth(currentSize.x);
+            // ImGui::Separator();
+            // ImGui::PopItemWidth();
+            // ImGui::Button("This is a button", {256, 32});
+            // ImGui::SetCursorPos({0, 480});
+            // ImGui::LabelText("How to set the size?", nullptr);
             
-            ImGui::PushItemWidth(800.0f);
-            ImGui::Separator();
-            ImGui::PopItemWidth();
-            ImGui::Button("This is a button", {256, 32});
-            ImGui::SetCursorPos({0, 480});
-            ImGui::LabelText("How to set the size?", nullptr);
-            ImGui::End();
-            // ImGui widgets end
+            // // if (currentSize.x < 640)
+            // // {
+            // //     ImGui::SetWindowSize({640, currentSize.y});
+            // // }
+            // // if (currentSize.y < 480)
+            // // {
+            // //     ImGui::SetWindowSize({currentSize.x, 480});
+            // // }
+            // ImGui::End();
+            // // ImGui widgets end
 
-            ImGui::SetNextWindowSize({240, 600}, 0);
-            ImGui::GetStyle().WindowBorderSize = 2.0f;
-            ImGui::SetNextWindowPos({1200, 0});
+            // ImGui::SetNextWindowSize({240, 600}, 0);
+            // ImGui::GetStyle().WindowBorderSize = 2.0f;
+            // ImGui::SetNextWindowPos({1200, 0});
 
-            ImGui::Begin(
-                "ImGui Test Window 2", 
-                nullptr, 
-                ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse)
-            ;
-            ImGui::End();
+            // ImGui::Begin(
+            //     "ImGui Test Window 2", 
+            //     nullptr, 
+            //     ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse)
+            // ;
+            // ImGui::End();
 
             ImGui::Render();
             ImGuiSDL::Render(ImGui::GetDrawData());
