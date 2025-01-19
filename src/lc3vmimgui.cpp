@@ -27,7 +27,7 @@ int main()
     // Memory Window
     char text[] = "abcdefghijklmnopqrstuvwxyz";
     WindowConfig winConfig {true, 20, {800, 600}, {640, 480}, {0, 0}};
-    LC3VMMemorywindow memoryWindow = LC3VMMemorywindow(text, 26, winConfig);
+    LC3VMMemorywindow memoryWindow = LC3VMMemorywindow(text, 640, winConfig);
 
     bool isRunning = true;
     bool isDebug = false;

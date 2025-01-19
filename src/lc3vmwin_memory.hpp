@@ -34,6 +34,8 @@ public:
     ImVec2 winPos;
     bool initialized;
     ImFont* font;
+    uint16_t initialAddress;    // The first line starts from initialAddress
+    std::vector<bool> selection;
 
     LC3VMMemorywindow() = delete;
     LC3VMMemorywindow(char memory[], int memorySize, const WindowConfig& config);
