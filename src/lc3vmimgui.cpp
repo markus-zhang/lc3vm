@@ -1,4 +1,5 @@
 #include "lc3vmwin_memory.hpp"
+#include <iostream>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <imgui/imgui.h>
@@ -9,12 +10,19 @@ int main()
 {
     SDL_Init(SDL_INIT_EVERYTHING);
 
+    SDL_DisplayMode displayMode;
+    if (SDL_GetCurrentDisplayMode(0, &displayMode) != 0) {
+        std::cerr << "SDL_GetCurrentDisplayMode Error: " << SDL_GetError() << std::endl;
+        SDL_Quit();
+        return 1;
+    }
+
     SDL_Window* window = SDL_CreateWindow(
         "ImGui Test",
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
-        1440,
-        900,
+        displayMode.w,
+        displayMode.h,
         SDL_WINDOW_SHOWN
     );
 
@@ -26,7 +34,7 @@ int main()
 
     // Memory Window
     char text[] = "abcdefghijklmnopqrstuvwxyz";
-    WindowConfig winConfig {true, 20, {800, 600}, {640, 480}, {0, 0}};
+    WindowConfig winConfig {true, 20, {800, 600}, {800, 600}, {0, 0}};
     LC3VMMemorywindow memoryWindow = LC3VMMemorywindow(text, 640, winConfig);
 
     bool isRunning = true;

@@ -9,9 +9,13 @@ LC3VMMemorywindow::LC3VMMemorywindow(char* memory, int memorySize, const WindowC
 
     buffer = std::vector<Glyph>(memorySize, {0, 255, 255, 255});
     bufferSize = memorySize;
-    while (*memory != '\0')
-    {    
-        buffer.push_back({*memory, 255, 255, 255});
+    for (int i = 0; ; i++)
+    {
+        if (*memory == '\0')
+        {
+            break;
+        }    
+        buffer[i] = {*memory, 255, 255, 255};
         memory++;
     }
 
@@ -66,7 +70,7 @@ void LC3VMMemorywindow::Draw()
     ImGui::SetCursorPos({20.0f, 20.0f});
 
     ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(0, 255, 0, 255));
-    ImGui::Text("Address\t");
+    ImGui::Text("Address ");
     ImGui::SameLine();
     ImGui::Text(" 00");
     ImGui::SameLine();
@@ -100,13 +104,19 @@ void LC3VMMemorywindow::Draw()
     ImGui::SameLine();
     ImGui::Text(" 0F");
     ImGui::SameLine();
-    ImGui::Text("\tASCII");
+    ImGui::Text("        ASCII     ");
     // 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\tASCII");
     ImGui::PopStyleColor();
     ImGui::SameLine();
-    ImGui::Button("Row Up");
+    if (ImGui::Button("Row <"))
+    {
+        if (initialAddress >= 0x10)
+        {
+            initialAddress -= 0x10;
+        }
+    }
     ImGui::SameLine();
-    ImGui::Button("Page Up");
+    ImGui::Button("Page <");
 
     // Render memory glyphs
 
@@ -146,17 +156,17 @@ void LC3VMMemorywindow::Draw()
     // {       
     // }
 
-    for (int i = initialAddress; i < initialAddress + 20 * 16; i++)
+    for (int i = initialAddress; i < initialAddress + 32 * 16; i++)
     {
         /*
-            Starting from initialAddress, we only render 320 selectables each frame
+            Starting from initialAddress, we only render 512 selectables each frame
         */
         
         // Header
         if (i % 16 == 0)
         {
             ImGui::SetCursorPosX(20.0f);
-            ss << "0x" << std::hex << std::setfill('0') << std::setw(4) << static_cast<int>(i) << " \t";
+            ss << "0x" << std::hex << std::setfill('0') << std::setw(4) << static_cast<int>(i) << " ";
             std::string header = ss.str();
             ImGui::Text("%s", header.c_str());
             ss.str("");
@@ -176,17 +186,35 @@ void LC3VMMemorywindow::Draw()
 
         if (i % 16 == 15)
         {
-            ImGui::Text("\t");
+            ImGui::Text(" ");
+            // print the ASCII stuffs
+            for (int j = i - 15; j <= i; j++)
+            {
+                char ascii = buffer[j].ch;
+                ss << (std::isprint(ascii) ? ascii : '.');
+            }
+            ImGui::SameLine();
+            std::string asciiString = ss.str();
+            ImGui::Text("%s", asciiString.c_str());
+            ss.str("");
+            ss.clear();
         }
     }
     ImGui::SameLine();
-    ImGui::Button("Row Down");
+    if (ImGui::Button("Row >"))
+    {
+        // A page is 32 rows, so cannot scroll past that
+        if (initialAddress <= bufferSize - 33 * 16)    
+        {
+            initialAddress += 0x10;
+        }
+    }
     ImGui::SameLine();
-    ImGui::Button("Page Down");
+    ImGui::Button("Page >");
 
     ImGui::PopStyleColor();
 
-    ImGui::Separator();
+    // ImGui::Separator();
 
     // ImGui::PopFont();
     ImGui::End();
