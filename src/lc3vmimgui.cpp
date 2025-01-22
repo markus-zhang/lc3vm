@@ -21,8 +21,10 @@ int main()
         "ImGui Test",
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
-        displayMode.w,
-        displayMode.h,
+        // displayMode.w,
+        // displayMode.h,
+        1920,
+        1080,
         SDL_WINDOW_SHOWN
     );
 
@@ -34,7 +36,7 @@ int main()
 
     // Memory Window
     char text[] = "abcdefghijklmnopqrstuvwxyz";
-    WindowConfig winConfig {true, 20, {800, 600}, {800, 600}, {0, 0}};
+    WindowConfig winConfig {true, 20, {1024, 768}, {800, 600}, {0, 0}};
     LC3VMMemorywindow memoryWindow = LC3VMMemorywindow(text, 640, winConfig);
 
     bool isRunning = true;

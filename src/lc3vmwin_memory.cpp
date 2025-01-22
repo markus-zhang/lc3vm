@@ -35,6 +35,17 @@ LC3VMMemorywindow::LC3VMMemorywindow(char* memory, int memorySize, const WindowC
     // font = nullptr;
     initialAddress      = 0;    // This value is to be aligned down to 16-byte (0xab00)
     selection = std::vector<bool>(bufferSize, false);
+    mouseDoubleClicked = false;
+    mousePos = {-1, -1};
+    // If the editor window is on, there are things that should be ignored, maybe?
+    editorMode = false;
+    /* 
+        states for double clicking editing
+        We can't put them into Draw(), because memoryEditedIndex would change with each SDL Loop (not the loop inside Draw)
+        We have to put them as "global"
+    */
+    memoryEditedIndex = -1;
+    // char memoryEditedBackup = 0;
 }
 
 void LC3VMMemorywindow::Draw()
@@ -61,6 +72,12 @@ void LC3VMMemorywindow::Draw()
         nullptr,
         ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse
     );
+
+    /* Capture mouse double click */
+    if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+    {
+        mouseDoubleClicked = true;
+    }
 
     // ImGui::PushFont(font);
     // ImVec2 charSize = font->CalcTextSizeA(20.0f, FLT_MAX, 0.0f, "A");
@@ -156,6 +173,8 @@ void LC3VMMemorywindow::Draw()
     // {       
     // }
 
+    
+    
     for (int i = initialAddress; i < initialAddress + 32 * 16; i++)
     {
         /*
@@ -176,10 +195,16 @@ void LC3VMMemorywindow::Draw()
         ss << ' ' << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buffer[i].ch);
         std::string byteHex = ss.str();
 
-        if (ImGui::Selectable(byteHex.c_str(), selection[i], ImGuiSelectableFlags_None, textSize))
+        /* Memory editing started */
+
+        if (ImGui::Selectable(byteHex.c_str(), selection[i], ImGuiSelectableFlags_AllowDoubleClick, textSize))
         {
             selection[i] = !selection[i];
         }
+
+        
+        /* Memory editing ended */
+
         ss.str("");
         ss.clear();
         ImGui::SameLine();
@@ -199,7 +224,22 @@ void LC3VMMemorywindow::Draw()
             ss.str("");
             ss.clear();
         }
+        
+        /*
+            Figuring out which i we double clicked.
+            We cannot open the editor window in a loop, it has to be after the loop, 
+            so we need to record the index now.
+        */
+        if (mouseDoubleClicked && ImGui::IsItemHovered())
+        {
+            if (memoryEditedIndex == -1)
+            {
+                memoryEditedIndex = i;
+                printf("Index captured: %d\n", memoryEditedIndex);
+            }
+        }
     }
+    
     ImGui::SameLine();
     if (ImGui::Button("Row >"))
     {
@@ -213,6 +253,38 @@ void LC3VMMemorywindow::Draw()
     ImGui::Button("Page >");
 
     ImGui::PopStyleColor();
+
+
+    if (mouseDoubleClicked)
+    {
+        if (mousePos.x == -1)
+        {
+            mousePos = ImGui::GetMousePos();
+        }
+        ImGui::SetNextWindowPos(mousePos);
+        ImGui::SetNextWindowSizeConstraints({192, 80}, {192, 80});
+        ImGui::Begin(
+            "Memory Editor",
+            nullptr,
+            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse
+        );
+        ss << "0x" << std::hex << std::setfill('0') << std::setw(4) << static_cast<int>(memoryEditedIndex);
+        std::string inputLabel = ss.str();
+        char newValue[4] = {0};
+        // printf("%d\n", memoryEditedIndex);
+        /* 
+            TODO: 
+            ! somehow the label part doesn't work, maybe memoryEditedIndex is not correctly captured
+            - probably need to prevent window gone by mouse clicking
+            - need to figure out how to use backspace to remove char
+            - need to figure out how to extract the first two chars and convert that to a char and dump into buffer[inputLabel]
+        */
+        if (ImGui::InputText(inputLabel.c_str(), newValue, IM_ARRAYSIZE(newValue)))
+        {
+            ImGui::Text("%s", newValue);
+        }
+        ImGui::End();
+    }
 
     // ImGui::Separator();
 
