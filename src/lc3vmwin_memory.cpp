@@ -1,5 +1,5 @@
 #include "lc3vmwin_memory.hpp"
-#include <imgui/imgui_sdl.h>
+// #include <imgui/imgui_sdl.h>
 #include <iomanip>
 
 
@@ -27,6 +27,7 @@ LC3VMMemorywindow::LC3VMMemorywindow(char* memory, int memorySize, const WindowC
 
     initialized         = false;
     ImGuiIO& io = ImGui::GetIO();
+    // io.AddInputCharacter(ImGuiKey_Backspace);
     ImFontConfig fontConfig;
     fontConfig.SizePixels = 20.0f;  // 15pt 
     font = io.Fonts->AddFontDefault(&fontConfig);
@@ -37,7 +38,7 @@ LC3VMMemorywindow::LC3VMMemorywindow(char* memory, int memorySize, const WindowC
     selection = std::vector<bool>(bufferSize, false);
     mouseDoubleClicked = false;
     mousePos = {-1, -1};
-    // If the editor window is on, there are things that should be ignored, maybe?
+    // If the editor window is on, there are things that should be ignored, like pressing 'd' or 'esc', by the main SDL loop
     editorMode = false;
     /* 
         states for double clicking editing
@@ -70,7 +71,7 @@ void LC3VMMemorywindow::Draw()
     ImGui::Begin(
         "Memory Watch Window",
         nullptr,
-        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse
+        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoBringToFrontOnFocus
     );
 
     /* Capture mouse double click */
@@ -257,6 +258,9 @@ void LC3VMMemorywindow::Draw()
 
     if (mouseDoubleClicked)
     {
+        // right now editorMode can only be cancelled by pressing ESC
+        // But in the future we should allow double click to close the editor window and open a new one at the new double clicked place
+        editorMode = true; 
         if (mousePos.x == -1)
         {
             mousePos = ImGui::GetMousePos();
@@ -275,11 +279,14 @@ void LC3VMMemorywindow::Draw()
         /* 
             TODO: 
             ! somehow the label part doesn't work, maybe memoryEditedIndex is not correctly captured
-            - probably need to prevent window gone by mouse clicking
+            ! probably need to prevent window gone by mouse clicking (done by using ImGuiWindowFlags_NoBringToFrontOnFocus)
             - need to figure out how to use backspace to remove char
             - need to figure out how to extract the first two chars and convert that to a char and dump into buffer[inputLabel]
         */
-        if (ImGui::InputText(inputLabel.c_str(), newValue, IM_ARRAYSIZE(newValue)))
+        if (ImGui::InputText(
+            inputLabel.c_str(), newValue, IM_ARRAYSIZE(newValue)), 
+            ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_CharsNoBlank
+        )
         {
             ImGui::Text("%s", newValue);
         }

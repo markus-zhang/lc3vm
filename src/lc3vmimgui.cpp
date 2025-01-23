@@ -3,8 +3,9 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <imgui/imgui.h>
-#include <imgui/imgui_sdl.h>
-#include <imgui/imgui_impl_sdl.h>
+// #include <imgui/imgui_sdl.h>
+#include <imgui/imgui_impl_sdl2.h>
+#include <imgui/imgui_impl_sdlrenderer2.h>
 
 int main()
 {
@@ -32,7 +33,9 @@ int main()
 
     // Initialize the ImGui context
     ImGui::CreateContext();
-    ImGuiSDL::Initialize(renderer, 1440, 900);
+    // ImGuiSDL::Initialize(renderer, 1440, 900);
+    ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
+    ImGui_ImplSDLRenderer2_Init(renderer);
 
     // Memory Window
     char text[] = "abcdefghijklmnopqrstuvwxyz";
@@ -71,11 +74,19 @@ int main()
                 {
                     if (sdlEvent.key.keysym.sym == SDLK_ESCAPE)
                     {
-                        isRunning = false;
+                        // When editing, esc is used to close the editor mini window
+                        if (!memoryWindow.editorMode)
+                        {
+                            isRunning = false;
+                        }
                     }
                     else if (sdlEvent.key.keysym.sym == SDLK_d)
                     {
-                        isDebug = !isDebug;
+                        // We don't want the whole debug window closed when user types 'd', do we?
+                        if (!memoryWindow.editorMode)
+                        {
+                            isDebug = !isDebug;
+                        }
                     }
                 }
             }
@@ -86,8 +97,12 @@ int main()
         // ImGui part
         if (isDebug)
         {
+            ImGui_ImplSDLRenderer2_NewFrame();
+            ImGui_ImplSDL2_NewFrame();
             ImGui::NewFrame();
             memoryWindow.Draw();
+
+
             // if (!windowInitialized)
             // {
             //     ImGui::SetNextWindowSize(initialWindowSize, 0);
@@ -104,7 +119,7 @@ int main()
             //     ImGuiWindowFlags_NoCollapse
             // );
             // // ImGui::NewFrame();
-            // // ImGui::ShowDemoWindow();
+            // ImGui::ShowDemoWindow();
 
             // // ImGui widgets begin
             // // ImGui::SetCursorPos({0, 0});
@@ -140,7 +155,8 @@ int main()
             // ImGui::End();
 
             ImGui::Render();
-            ImGuiSDL::Render(ImGui::GetDrawData());
+            // ImGuiSDL::Render(ImGui::GetDrawData());
+            ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), renderer);
         }
 
         // Draw a rectangle for test
@@ -153,7 +169,9 @@ int main()
         SDL_RenderPresent(renderer);
     }
 
-    ImGuiSDL::Deinitialize();
+    // ImGuiSDL::Deinitialize();
+    ImGui_ImplSDLRenderer2_Shutdown();
+    ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
