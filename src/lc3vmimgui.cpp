@@ -39,7 +39,7 @@ int main()
 
     // Memory Window
     unsigned char text[] = "aaabcdefghijklmnopqrstuvwxyz";
-    WindowConfig winConfig {true, 20, {1024, 768}, {800, 600}, {0, 0}};
+    WindowConfig winConfig {true, 20, {848, 672}, {848, 672}, {0, 0}};
     LC3VMMemorywindow memoryWindow = LC3VMMemorywindow(text, 640, winConfig);
 
     bool isRunning = true;

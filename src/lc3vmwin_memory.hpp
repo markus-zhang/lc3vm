@@ -40,6 +40,7 @@ public:
     ImVec2 mousePos;
     bool editorMode;
     int memoryEditedIndex;
+    bool memoryEditedIndexLocked;
 
     LC3VMMemorywindow() = delete;
     LC3VMMemorywindow(unsigned char memory[], int memorySize, const WindowConfig& config);

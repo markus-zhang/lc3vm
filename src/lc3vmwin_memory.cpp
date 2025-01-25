@@ -34,7 +34,7 @@ LC3VMMemorywindow::LC3VMMemorywindow(unsigned char* memory, int memorySize, cons
     ImGuiIO& io = ImGui::GetIO();
     // io.AddInputCharacter(ImGuiKey_Backspace);
     ImFontConfig fontConfig;
-    fontConfig.SizePixels = 16.0f;  // 15pt 
+    fontConfig.SizePixels = 14.0f;
     font = io.Fonts->AddFontDefault(&fontConfig);
     assert(font != nullptr);
     // io.Fonts->Build();
@@ -51,6 +51,7 @@ LC3VMMemorywindow::LC3VMMemorywindow(unsigned char* memory, int memorySize, cons
         We have to put them as "global"
     */
     memoryEditedIndex = -1;
+    memoryEditedIndexLocked = false;
     // char memoryEditedBackup = 0;
 }
 
@@ -78,12 +79,6 @@ void LC3VMMemorywindow::Draw()
         nullptr,
         ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoBringToFrontOnFocus
     );
-
-    /* Capture mouse double click */
-    if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-    {
-        editorMode = true;
-    }
 
     // ImGui::PushFont(font);
     // ImVec2 charSize = font->CalcTextSizeA(20.0f, FLT_MAX, 0.0f, "A");
@@ -178,8 +173,13 @@ void LC3VMMemorywindow::Draw()
     // while (clipper.Step())
     // {       
     // }
+    
+    // Limit the area that double click works, otherwise double click works even when mouse is out of window
+    ImVec2 upperLeft;
+    ImVec2 lowerRight;
 
-        
+    
+    
     for (int i = initialAddress; i < initialAddress + 32 * 16; i++)
     {
         /*
@@ -193,6 +193,10 @@ void LC3VMMemorywindow::Draw()
         if (i % 16 == 0)
         {
             ImGui::SetCursorPosX(20.0f);
+            if (i == 1)
+            {
+                upperLeft = ImGui::GetCursorPos();
+            }
             ss << "0x" << std::hex << std::setfill('0') << std::setw(4) << static_cast<int>(i) << " ";
             std::string header = ss.str();
             ImGui::Text("%s", header.c_str());
@@ -212,12 +216,39 @@ void LC3VMMemorywindow::Draw()
         if (ImGui::Selectable(byteHex.c_str(), selection[i], ImGuiSelectableFlags_AllowDoubleClick, textSize))
         {
             selection[i] = !selection[i];
+            /* Capture mouse double click */
+            if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+            {
+                editorMode = true;
+            }
+            /*
+                Figuring out which i we double clicked.
+                We cannot open the editor window in a loop, it has to be after the loop, 
+                so we need to record the index now.
+
+                This NEEDS to be withint the Selectable() because it needs to stick with the i,
+                otherwise i changes with mouse move.
+
+                I THINK this is because Selectable() only returns true when use mouse click it,
+                thus memoryEditedIndex only changes when user selects another one.
+
+                TODO:
+                - Prevent memoryEditedIndex changes with a single click
+            */
+
+            if (!memoryEditedIndexLocked && editorMode && ImGui::IsItemHovered())
+            {
+                memoryEditedIndex = i;
+                printf("Index captured: %d\n", memoryEditedIndex);
+                memoryEditedIndexLocked = true;
+            }
         }
 
         ImGui::SameLine();
 
         if (i % 16 == 15)
         {
+            lowerRight = ImGui::GetCursorPos();
             ImGui::Text(" ");
             // print the ASCII stuffs
             for (int j = i - 15; j <= i; j++)
@@ -237,13 +268,13 @@ void LC3VMMemorywindow::Draw()
         /*
             Figuring out which i we double clicked.
             We cannot open the editor window in a loop, it has to be after the loop, 
-            so we need to record the index now.
+            so we need to record the index now. But once we select it keeps until 
         */
-        if (editorMode && ImGui::IsItemHovered())
-        {
-            memoryEditedIndex = i;
-            printf("Index captured: %d\n", memoryEditedIndex);
-        }
+        // if (editorMode && ImGui::IsItemHovered())
+        // {
+        //     memoryEditedIndex = i;
+        //     printf("Index captured: %d\n", memoryEditedIndex);
+        // }
 
         // Don't forget to PopID()
         ImGui::PopID();
@@ -283,6 +314,8 @@ void LC3VMMemorywindow::Draw()
         Editor(mousePos, &buf, original);
         // dump the new value (or the original if the new value is not proper) back to the memory
         buffer[memoryEditedIndex].ch = buf;
+        // Release memoryEditedIndexLocked for next edit
+        memoryEditedIndexLocked = false;
     }
 
     // ImGui::PopFont();
