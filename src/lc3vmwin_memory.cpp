@@ -1,9 +1,14 @@
 #include "lc3vmwin_memory.hpp"
-// #include <imgui/imgui_sdl.h>
 #include <iomanip>
 
+/*
+    TODO:
+    ! Draw()
+    ! Editor()
+    - Quit_Confirm()
+*/
 
-LC3VMMemorywindow::LC3VMMemorywindow(char* memory, int memorySize, const WindowConfig& config)
+LC3VMMemorywindow::LC3VMMemorywindow(unsigned char* memory, int memorySize, const WindowConfig& config)
 {
     assert(memory != nullptr);
 
@@ -29,7 +34,7 @@ LC3VMMemorywindow::LC3VMMemorywindow(char* memory, int memorySize, const WindowC
     ImGuiIO& io = ImGui::GetIO();
     // io.AddInputCharacter(ImGuiKey_Backspace);
     ImFontConfig fontConfig;
-    fontConfig.SizePixels = 20.0f;  // 15pt 
+    fontConfig.SizePixels = 16.0f;  // 15pt 
     font = io.Fonts->AddFontDefault(&fontConfig);
     assert(font != nullptr);
     // io.Fonts->Build();
@@ -77,7 +82,7 @@ void LC3VMMemorywindow::Draw()
     /* Capture mouse double click */
     if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
     {
-        mouseDoubleClicked = true;
+        editorMode = true;
     }
 
     // ImGui::PushFont(font);
@@ -123,7 +128,7 @@ void LC3VMMemorywindow::Draw()
     ImGui::Text(" 0F");
     ImGui::SameLine();
     ImGui::Text("        ASCII     ");
-    // 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\tASCII");
+    // The reason I don't use "00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\tASCII") is because SameLine() has some spacing
     ImGui::PopStyleColor();
     ImGui::SameLine();
     if (ImGui::Button("Row <"))
@@ -174,14 +179,16 @@ void LC3VMMemorywindow::Draw()
     // {       
     // }
 
-    
-    
+        
     for (int i = initialAddress; i < initialAddress + 32 * 16; i++)
     {
         /*
             Starting from initialAddress, we only render 512 selectables each frame
         */
-        
+
+        // PushID() to avoid conflict IDs
+        ImGui::PushID(i);
+
         // Header
         if (i % 16 == 0)
         {
@@ -193,21 +200,20 @@ void LC3VMMemorywindow::Draw()
             ss.clear();
             ImGui::SameLine();
         }
+        // iostream treats a char as a char so will display a char even with std::hex
+        // to properly display the hex value we need to cast it to an integer first
         ss << ' ' << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buffer[i].ch);
         std::string byteHex = ss.str();
+        ss.str("");
+        ss.clear();
 
-        /* Memory editing started */
+        /* Memory display started */
 
         if (ImGui::Selectable(byteHex.c_str(), selection[i], ImGuiSelectableFlags_AllowDoubleClick, textSize))
         {
             selection[i] = !selection[i];
         }
 
-        
-        /* Memory editing ended */
-
-        ss.str("");
-        ss.clear();
         ImGui::SameLine();
 
         if (i % 16 == 15)
@@ -225,20 +231,22 @@ void LC3VMMemorywindow::Draw()
             ss.str("");
             ss.clear();
         }
+
+        /* Memory display ended */
         
         /*
             Figuring out which i we double clicked.
             We cannot open the editor window in a loop, it has to be after the loop, 
             so we need to record the index now.
         */
-        if (mouseDoubleClicked && ImGui::IsItemHovered())
+        if (editorMode && ImGui::IsItemHovered())
         {
-            if (memoryEditedIndex == -1)
-            {
-                memoryEditedIndex = i;
-                printf("Index captured: %d\n", memoryEditedIndex);
-            }
+            memoryEditedIndex = i;
+            printf("Index captured: %d\n", memoryEditedIndex);
         }
+
+        // Don't forget to PopID()
+        ImGui::PopID();
     }
     
     ImGui::SameLine();
@@ -255,46 +263,122 @@ void LC3VMMemorywindow::Draw()
 
     ImGui::PopStyleColor();
 
+    /* If we are in Editor Mode, popup the editor window */
 
-    if (mouseDoubleClicked)
+    if (editorMode)
     {
         // right now editorMode can only be cancelled by pressing ESC
-        // But in the future we should allow double click to close the editor window and open a new one at the new double clicked place
-        editorMode = true; 
         if (mousePos.x == -1)
         {
             mousePos = ImGui::GetMousePos();
         }
-        ImGui::SetNextWindowPos(mousePos);
-        ImGui::SetNextWindowSizeConstraints({192, 80}, {192, 80});
-        ImGui::Begin(
-            "Memory Editor",
-            nullptr,
-            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse
-        );
+    }
+
+    if (editorMode)
+    {
+        // This part needs to be separated from the previous if(editorMode) block
+        // I haven't figured out why yet
+        char buf = 0;
+        char original = buffer[memoryEditedIndex].ch;
+        Editor(mousePos, &buf, original);
+        // dump the new value (or the original if the new value is not proper) back to the memory
+        buffer[memoryEditedIndex].ch = buf;
+    }
+
+    // ImGui::PopFont();
+    ImGui::End();
+}
+
+unsigned char LC3VMMemorywindow::Calculate_Char(char buf[], char original)
+{
+    if (!buf)
+    {
+        return original;
+    }
+    /* From char[3], use the first two indices to calculate the value */
+    // 2a -> 2 is c1 and a is c0
+    char c1 = buf[0];
+    char c0 = buf[1];
+    unsigned char result;
+
+    if (c1 >= '0' && c1 <= '9')
+    {
+        result = (c1 - '0') * 16;
+    }
+    else if (c1 >= 'A' && c1 <= 'F')
+    {
+        result = (c1 - 'A' + 10) * 16;
+    }
+    else if (c1 >= 'a' && c1 <= 'f')
+    {
+        result = (c1 - 'a' + 10) * 16;
+    }
+    else 
+    {
+        return original;
+    }
+
+    if (c0 >= '0' && c0 <= '9')
+    {
+        result += (c0 - '0');
+    }
+    else if (c0 >= 'A' && c0 <= 'F')
+    {
+        result += (c0 - 'A' + 10);
+    }
+    else if (c0 >= 'a' && c0 <= 'f')
+    {
+        result += (c0 - 'a' + 10);
+    }
+    else 
+    {
+        return original;
+    }
+    return result;
+}
+
+void LC3VMMemorywindow::Editor(ImVec2 mousePos, char* c, char original)
+{
+    std::stringstream ss;
+    ImGui::SetNextWindowPos(mousePos);
+    ImGui::SetNextWindowSizeConstraints({192, 80}, {192, 80});
+    if (!ImGui::Begin("Memory Editor", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
+    {
+        ImGui::End();
+    }
+    else
+    {
         ss << "0x" << std::hex << std::setfill('0') << std::setw(4) << static_cast<int>(memoryEditedIndex);
         std::string inputLabel = ss.str();
-        char newValue[4] = {0};
+
+        // Need 3 chars to capture 2 chars + '\0'
+        char newValue[3] = {0};
         // printf("%d\n", memoryEditedIndex);
         /* 
             TODO: 
             ! somehow the label part doesn't work, maybe memoryEditedIndex is not correctly captured
             ! probably need to prevent window gone by mouse clicking (done by using ImGuiWindowFlags_NoBringToFrontOnFocus)
-            - need to figure out how to use backspace to remove char
-            - need to figure out how to extract the first two chars and convert that to a char and dump into buffer[inputLabel]
+            ! need to figure out how to use backspace to remove char
+            ! need to figure out how to close editor window when ESCAPE is pressed
+            ! need to figure out how to extract the first two chars and convert that to a char and dump back into buffer[inputLabel]
         */
-        if (ImGui::InputText(
-            inputLabel.c_str(), newValue, IM_ARRAYSIZE(newValue)), 
-            ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_CharsNoBlank
+        if (
+            ImGui::InputText(
+                inputLabel.c_str(), newValue, IM_ARRAYSIZE(newValue), ImGuiInputTextFlags_CharsHexadecimal
+            )
         )
         {
             ImGui::Text("%s", newValue);
+            ImGui::SameLine();
+            // Just for debugging
+            ImGui::Text("%d", Calculate_Char(newValue, original));
         }
+        *c = Calculate_Char(newValue, original);
         ImGui::End();
     }
+}
 
-    // ImGui::Separator();
+void LC3VMMemorywindow::Quit_Confirm()
+{
 
-    // ImGui::PopFont();
-    ImGui::End();
 }

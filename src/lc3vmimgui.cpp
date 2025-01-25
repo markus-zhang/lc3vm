@@ -38,7 +38,7 @@ int main()
     ImGui_ImplSDLRenderer2_Init(renderer);
 
     // Memory Window
-    char text[] = "abcdefghijklmnopqrstuvwxyz";
+    unsigned char text[] = "aaabcdefghijklmnopqrstuvwxyz";
     WindowConfig winConfig {true, 20, {1024, 768}, {800, 600}, {0, 0}};
     LC3VMMemorywindow memoryWindow = LC3VMMemorywindow(text, 640, winConfig);
 
@@ -75,9 +75,16 @@ int main()
                     if (sdlEvent.key.keysym.sym == SDLK_ESCAPE)
                     {
                         // When editing, esc is used to close the editor mini window
+                        // as editorMode is the controlling boolean
                         if (!memoryWindow.editorMode)
                         {
                             isRunning = false;
+                        }
+                        else
+                        {
+                            // mouseDoubleClicked needs to set false, otherwise it keeps opening the editor window
+                            // memoryWindow.mouseDoubleClicked = false;
+                            memoryWindow.editorMode = false;
                         }
                     }
                     else if (sdlEvent.key.keysym.sym == SDLK_d)
