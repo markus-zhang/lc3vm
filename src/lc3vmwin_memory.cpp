@@ -366,35 +366,3 @@ void LC3VMMemorywindow::Editor(ImVec2 mousePos, char* c, char original)
         ImGui::End();
     }
 }
-
-bool LC3VMMemorywindow::Quit_Confirm()
-{
-    // Shown in the middle of 1920*1080 window
-    ImVec2 size = {192, 80};
-    ImGui::SetNextWindowPos({(1920 - size.x) / 2, (1080 - size.y) / 2});
-    ImGui::SetNextWindowSizeConstraints(size, size);
-
-    if (!ImGui::Begin("Confirm", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
-    {
-        ImGui::End();
-        return false;
-    }
-    else
-    {
-        ImGui::Text("Confirm to quit?");
-        ImGui::SameLine();
-        if (ImGui::Button("Yes"))
-        {
-            ImGui::End();
-            return true;
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("No"))
-        {
-            ImGui::End();
-            return false;
-        }
-    }
-    ImGui::End();
-    return false;
-}

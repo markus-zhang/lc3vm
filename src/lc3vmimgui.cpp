@@ -102,29 +102,24 @@ int main()
 
         SDL_SetRenderDrawColor(renderer, 21, 21, 21, 255);
         SDL_RenderClear(renderer);
-        // ImGui part
+
+        // ImGui part BEGIN --------------------------------------------------
+        ImGui_ImplSDLRenderer2_NewFrame();
+        ImGui_ImplSDL2_NewFrame();
+        ImGui::NewFrame();
         if (isDebug)
         {
-            ImGui_ImplSDLRenderer2_NewFrame();
-            ImGui_ImplSDL2_NewFrame();
-            ImGui::NewFrame();
             memoryWindow.Draw();
-
-            ImGui::Render();
-            // ImGuiSDL::Render(ImGui::GetDrawData());
-            ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), renderer);
         }
 
         if (signalQuit)
         {
-            ImGui_ImplSDLRenderer2_NewFrame();
-            ImGui_ImplSDL2_NewFrame();
-            ImGui::NewFrame();
-            Quit_Confirm(&isRunning);
-
-            ImGui::Render();    
-            ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), renderer);
+            signalQuit = Quit_Confirm(&isRunning);
         }
+
+        ImGui::Render();
+        ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), renderer);
+        // ImGui part END ----------------------------------------------------
 
         // Draw a rectangle for test
         // SDL_Rect rect = {16, 16, 256, 256};

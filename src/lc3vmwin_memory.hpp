@@ -49,7 +49,6 @@ public:
 
     void Draw();
     void Editor(ImVec2 mousePos, char* c, char original);
-    bool Quit_Confirm();
     unsigned char Calculate_Char(char buf[], char original);
 };
 

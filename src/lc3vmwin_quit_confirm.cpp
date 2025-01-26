@@ -1,6 +1,6 @@
 #include "lc3vmwin_quit_confirm.hpp"
 
-void Quit_Confirm(bool* isRunning)
+bool Quit_Confirm(bool* isRunning)
 {
     // Shown in the middle of 1920*1080 window
     ImVec2 size = {256, 80};
@@ -11,6 +11,7 @@ void Quit_Confirm(bool* isRunning)
     {
         ImGui::End();
         *isRunning = true;
+        return false;
     }
     else
     {
@@ -20,16 +21,16 @@ void Quit_Confirm(bool* isRunning)
         {
             ImGui::End();
             *isRunning = false;
-            return;
+            return false;
         }
         ImGui::SameLine();
         if (ImGui::Button("No"))
         {
             ImGui::End();
             *isRunning = true;
-            return;
+            return false;
         }
     }
     ImGui::End();
-    // *isRunning = true;
+    return true;
 }
