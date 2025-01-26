@@ -117,6 +117,9 @@ int main()
 
         if (signalQuit)
         {
+            ImGui_ImplSDLRenderer2_NewFrame();
+            ImGui_ImplSDL2_NewFrame();
+            ImGui::NewFrame();
             Quit_Confirm(&isRunning);
 
             ImGui::Render();    

@@ -2,11 +2,6 @@
 
 void Quit_Confirm(bool* isRunning)
 {
-
-    ImGui_ImplSDLRenderer2_NewFrame();
-    ImGui_ImplSDL2_NewFrame();
-    ImGui::NewFrame();
-
     // Shown in the middle of 1920*1080 window
     ImVec2 size = {256, 80};
     ImGui::SetNextWindowPos({(1920 - size.x) / 2, (1080 - size.y) / 2});
