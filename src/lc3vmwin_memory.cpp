@@ -52,6 +52,7 @@ LC3VMMemorywindow::LC3VMMemorywindow(unsigned char* memory, int memorySize, cons
     */
     memoryEditedIndex = -1;
     memoryEditedIndexLocked = false;
+    quitSignal = false;
     // char memoryEditedBackup = 0;
 }
 
@@ -81,7 +82,6 @@ void LC3VMMemorywindow::Draw()
     );
 
     // ImGui::PushFont(font);
-    // ImVec2 charSize = font->CalcTextSizeA(20.0f, FLT_MAX, 0.0f, "A");
 
     // Render first row
     // Address    00 01 ... 0F ASCII
@@ -123,7 +123,7 @@ void LC3VMMemorywindow::Draw()
     ImGui::Text(" 0F");
     ImGui::SameLine();
     ImGui::Text("        ASCII     ");
-    // The reason I don't use "00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\tASCII") is because SameLine() has some spacing
+    // I don't use "00 01 02 .. 0F\tASCII") because we need to match the same SameLine() call in the later for loop
     ImGui::PopStyleColor();
     ImGui::SameLine();
     if (ImGui::Button("Row <"))
@@ -145,40 +145,12 @@ void LC3VMMemorywindow::Draw()
     std::stringstream ss;
     const char* text = " 00";
     ImVec2 textSize = ImGui::CalcTextSize(text);    // to get correct Selectable size for each glyph (note that the length also includes the prefix space)
-    
-    // for (int i = 0; i < bufferSize; i++)
-    // {
-    //     ImGui::SetCursorPosX(20.0f);       
-    //     // Header
-    //     if (i % 16 == 0)
-    //     {
-    //         ss << "0x3000 \t";
-    //     }
-    //     ss << ' ';
-    //     ss << std::hex << std::setfill('0');
-    //     ss << std::setw(2) << static_cast<unsigned>(buffer[i].ch);
-    //     if (i % 16 == 15 || i == bufferSize - 1)
-    //     {
-    //         ss << "\t";
-    //         // ss << ASCII stuffs
-    //         std::string line = ss.str();
-    //         ImGui::Text("%s", line.c_str());        
-    //         ss.str("");
-    //         ss.clear();
-    //     }
-    // }
 
     // static ImGuiListClipper clipper;
     // clipper.Begin(bufferSize / 16);
     // while (clipper.Step())
     // {       
     // }
-    
-    // Limit the area that double click works, otherwise double click works even when mouse is out of window
-    ImVec2 upperLeft;
-    ImVec2 lowerRight;
-
-    
     
     for (int i = initialAddress; i < initialAddress + 32 * 16; i++)
     {
@@ -193,10 +165,6 @@ void LC3VMMemorywindow::Draw()
         if (i % 16 == 0)
         {
             ImGui::SetCursorPosX(20.0f);
-            if (i == 1)
-            {
-                upperLeft = ImGui::GetCursorPos();
-            }
             ss << "0x" << std::hex << std::setfill('0') << std::setw(4) << static_cast<int>(i) << " ";
             std::string header = ss.str();
             ImGui::Text("%s", header.c_str());
@@ -248,7 +216,6 @@ void LC3VMMemorywindow::Draw()
 
         if (i % 16 == 15)
         {
-            lowerRight = ImGui::GetCursorPos();
             ImGui::Text(" ");
             // print the ASCII stuffs
             for (int j = i - 15; j <= i; j++)
@@ -264,17 +231,6 @@ void LC3VMMemorywindow::Draw()
         }
 
         /* Memory display ended */
-        
-        /*
-            Figuring out which i we double clicked.
-            We cannot open the editor window in a loop, it has to be after the loop, 
-            so we need to record the index now. But once we select it keeps until 
-        */
-        // if (editorMode && ImGui::IsItemHovered())
-        // {
-        //     memoryEditedIndex = i;
-        //     printf("Index captured: %d\n", memoryEditedIndex);
-        // }
 
         // Don't forget to PopID()
         ImGui::PopID();
@@ -411,7 +367,34 @@ void LC3VMMemorywindow::Editor(ImVec2 mousePos, char* c, char original)
     }
 }
 
-void LC3VMMemorywindow::Quit_Confirm()
+bool LC3VMMemorywindow::Quit_Confirm()
 {
+    // Shown in the middle of 1920*1080 window
+    ImVec2 size = {192, 80};
+    ImGui::SetNextWindowPos({(1920 - size.x) / 2, (1080 - size.y) / 2});
+    ImGui::SetNextWindowSizeConstraints(size, size);
 
+    if (!ImGui::Begin("Confirm", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
+    {
+        ImGui::End();
+        return false;
+    }
+    else
+    {
+        ImGui::Text("Confirm to quit?");
+        ImGui::SameLine();
+        if (ImGui::Button("Yes"))
+        {
+            ImGui::End();
+            return true;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("No"))
+        {
+            ImGui::End();
+            return false;
+        }
+    }
+    ImGui::End();
+    return false;
 }

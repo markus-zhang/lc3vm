@@ -41,6 +41,7 @@ public:
     bool editorMode;
     int memoryEditedIndex;
     bool memoryEditedIndexLocked;
+    bool quitSignal;
 
     LC3VMMemorywindow() = delete;
     LC3VMMemorywindow(unsigned char memory[], int memorySize, const WindowConfig& config);
@@ -48,7 +49,7 @@ public:
 
     void Draw();
     void Editor(ImVec2 mousePos, char* c, char original);
-    void Quit_Confirm();
+    bool Quit_Confirm();
     unsigned char Calculate_Char(char buf[], char original);
 };
 

@@ -1,4 +1,5 @@
 #include "lc3vmwin_memory.hpp"
+#include "lc3vmwin_quit_confirm.hpp"
 #include <iostream>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
@@ -42,6 +43,7 @@ int main()
     WindowConfig winConfig {true, 20, {848, 672}, {848, 672}, {0, 0}};
     LC3VMMemorywindow memoryWindow = LC3VMMemorywindow(text, 640, winConfig);
 
+    bool signalQuit = false;
     bool isRunning = true;
     bool isDebug = false;
 
@@ -67,7 +69,7 @@ int main()
             {
                 case SDL_QUIT:
                 {
-                    isRunning = false;
+                    signalQuit = false;
                     break;
                 }
                 case SDL_KEYDOWN:
@@ -78,12 +80,11 @@ int main()
                         // as editorMode is the controlling boolean
                         if (!memoryWindow.editorMode)
                         {
-                            isRunning = false;
+                            signalQuit = true;
                         }
                         else
                         {
                             // mouseDoubleClicked needs to set false, otherwise it keeps opening the editor window
-                            // memoryWindow.mouseDoubleClicked = false;
                             memoryWindow.editorMode = false;
                         }
                     }
@@ -109,60 +110,16 @@ int main()
             ImGui::NewFrame();
             memoryWindow.Draw();
 
-
-            // if (!windowInitialized)
-            // {
-            //     ImGui::SetNextWindowSize(initialWindowSize, 0);
-            //     windowInitialized = true;
-            // }
-            // ImGui::GetStyle().WindowBorderSize = 2.0f;
-            // ImGui::SetNextWindowPos({0, 0});
-            // ImGui::SetNextWindowSizeConstraints(minWindowSize, initialWindowSize);
-
-            // ImGui::Begin(
-            //     "ImGui Test Window 1", 
-            //     nullptr, 
-            //     // ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse
-            //     ImGuiWindowFlags_NoCollapse
-            // );
-            // // ImGui::NewFrame();
-            // ImGui::ShowDemoWindow();
-
-            // // ImGui widgets begin
-            // // ImGui::SetCursorPos({0, 0});
-            // ImVec2 currentSize = ImGui::GetWindowSize();
-
-            // ImGui::PushItemWidth(currentSize.x);
-            // ImGui::Separator();
-            // ImGui::PopItemWidth();
-            // ImGui::Button("This is a button", {256, 32});
-            // ImGui::SetCursorPos({0, 480});
-            // ImGui::LabelText("How to set the size?", nullptr);
-            
-            // // if (currentSize.x < 640)
-            // // {
-            // //     ImGui::SetWindowSize({640, currentSize.y});
-            // // }
-            // // if (currentSize.y < 480)
-            // // {
-            // //     ImGui::SetWindowSize({currentSize.x, 480});
-            // // }
-            // ImGui::End();
-            // // ImGui widgets end
-
-            // ImGui::SetNextWindowSize({240, 600}, 0);
-            // ImGui::GetStyle().WindowBorderSize = 2.0f;
-            // ImGui::SetNextWindowPos({1200, 0});
-
-            // ImGui::Begin(
-            //     "ImGui Test Window 2", 
-            //     nullptr, 
-            //     ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse)
-            // ;
-            // ImGui::End();
-
             ImGui::Render();
             // ImGuiSDL::Render(ImGui::GetDrawData());
+            ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), renderer);
+        }
+
+        if (signalQuit)
+        {
+            Quit_Confirm(&isRunning);
+
+            ImGui::Render();    
             ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), renderer);
         }
 
