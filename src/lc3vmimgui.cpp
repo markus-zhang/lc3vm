@@ -104,6 +104,10 @@ int main()
         SDL_RenderClear(renderer);
 
         // ImGui part BEGIN --------------------------------------------------
+        /*
+            One important part is that all ImGui windows need to be within the same NewFrame(),
+            otherwise weird shits happen - e.g. mouse doesn't work on any of the windows somehow
+        */
         ImGui_ImplSDLRenderer2_NewFrame();
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();

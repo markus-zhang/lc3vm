@@ -1,26 +1,9 @@
 #ifndef _LC3VMWIN_MEMORY_HPP_
 #define _LC3VMWIN_MEMORY_HPP_
 
-#include <imgui/imgui.h>
+#include "globals.h"
 #include <string>
 #include <vector>
-
-struct Glyph
-{
-    unsigned char ch;
-    int r;
-    int g;
-    int b;
-};
-
-struct WindowConfig
-{
-    bool readonly;
-    int fontSize;
-    ImVec2 initialWindowSize;
-    ImVec2 minWindowSize;
-    ImVec2 winPos;
-};
 
 class LC3VMMemorywindow
 {
