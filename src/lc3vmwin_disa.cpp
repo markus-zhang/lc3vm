@@ -49,13 +49,13 @@ void LC3VMdisawindow::Draw(void)
     ImGui::Begin(
         "Disassembly Window",
         nullptr,
-        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoBringToFrontOnFocus
+        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoBringToFrontOnFocus
     );
 
     for (auto instr : instructionStream)
     {
-        ImGui::Text("%hu", instr);
-        ImGui::SameLine();
+        ImGui::Text("%hu#06x", instr);
+        // ImGui::SameLine();
     }
 
     ImGui::End();
