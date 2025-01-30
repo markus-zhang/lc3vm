@@ -27,7 +27,7 @@ public:
     bool quitSignal;
 
     LC3VMMemorywindow() = delete;
-    LC3VMMemorywindow(unsigned char memory[], int memorySize, const WindowConfig& config);
+    LC3VMMemorywindow(unsigned char* memory, int memorySize, const WindowConfig& config);
     ~LC3VMMemorywindow() = default;
 
     void Draw();

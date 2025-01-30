@@ -1,5 +1,6 @@
 #include "lc3vmwin_memory.hpp"
 #include "lc3vmwin_quit_confirm.hpp"
+#include "lc3vmwin_disa.hpp"
 #include <iostream>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
@@ -40,12 +41,17 @@ int main()
 
     // Memory Window
     unsigned char text[] = "aaabcdefghijklmnopqrstuvwxyz";
-    WindowConfig winConfig {true, 20, {848, 672}, {848, 672}, {0, 0}};
-    LC3VMMemorywindow memoryWindow = LC3VMMemorywindow(text, 640, winConfig);
+    WindowConfig memoryWinConfig {true, 20, {848, 672}, {848, 672}, {0, 0}};
+    LC3VMMemorywindow memoryWindow = LC3VMMemorywindow(text, 640, memoryWinConfig);
+    
+    uint16_t fakeInstr[100] = {0x12ef};
+    WindowConfig disaWinConfig {true, 20, {320, 480}, {320, 480}, {1024, 0}};
+    LC3VMdisawindow disaWindow = LC3VMdisawindow(fakeInstr, 100, 0x3000, disaWinConfig);
 
     bool signalQuit = false;
     bool isRunning = true;
     bool isDebug = false;
+    bool isDisa = false;
 
     while(isRunning)
     {
@@ -96,6 +102,10 @@ int main()
                             isDebug = !isDebug;
                         }
                     }
+                    else if (sdlEvent.key.keysym.sym == SDLK_g)
+                    {
+                        isDisa = !isDisa;
+                    }
                 }
             }
         }
@@ -114,6 +124,11 @@ int main()
         if (isDebug)
         {
             memoryWindow.Draw();
+        }
+
+        if (isDisa)
+        {
+            disaWindow.Draw();
         }
 
         if (signalQuit)

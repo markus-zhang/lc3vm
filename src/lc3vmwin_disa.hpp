@@ -20,6 +20,7 @@
 
 class LC3VMdisawindow
 {
+public:
     uint16_t initialAddress;
     uint16_t numInstructions;
     std::vector<uint16_t> instructionStream;    // In future may use a struct to hold an instruction
@@ -30,10 +31,13 @@ class LC3VMdisawindow
     ImVec2 winPos;
     ImFont* font;
 
+    bool initialized;
+
     LC3VMdisawindow() = delete;
-    LC3VMdisawindow(uint16_t* instructionStream, uint16_t numInstructions, const WindowConfig& config);
+    LC3VMdisawindow(uint16_t instrStream[], uint16_t numInstr, uint16_t address, const WindowConfig& config);
     ~LC3VMdisawindow() = default;
 
-    void Draw();
+    void Load(uint16_t instrStream[], uint16_t numInstr, uint16_t address);
+    void Draw(void);
     
 };
