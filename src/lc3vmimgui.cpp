@@ -44,7 +44,11 @@ int main()
     WindowConfig memoryWinConfig {true, 20, {848, 672}, {848, 672}, {0, 0}};
     LC3VMMemorywindow memoryWindow = LC3VMMemorywindow(text, 640, memoryWinConfig);
     
-    uint16_t fakeInstr[100] = {0x12ef};
+    uint16_t fakeInstr[100];
+    for (int i = 0; i < 100; i++)
+    {
+        fakeInstr[i] = 0x12ef;
+    }
     WindowConfig disaWinConfig {true, 20, {320, 480}, {320, 480}, {1024, 0}};
     LC3VMdisawindow disaWindow = LC3VMdisawindow(fakeInstr, 100, 0x3000, disaWinConfig);
 
@@ -104,7 +108,12 @@ int main()
                     }
                     else if (sdlEvent.key.keysym.sym == SDLK_g)
                     {
-                        isDisa = !isDisa;
+                        // TODO: This is probably not a great way to disable certain keys
+                        // Just imagine what happens if we have a dozen of such switches
+                        if (!memoryWindow.editorMode)
+                        {
+                            isDisa = !isDisa;
+                        }
                     }
                 }
             }

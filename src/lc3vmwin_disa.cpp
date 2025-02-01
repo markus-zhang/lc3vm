@@ -52,11 +52,31 @@ void LC3VMdisawindow::Draw(void)
         ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoBringToFrontOnFocus
     );
 
-    for (auto instr : instructionStream)
+    ImGui::Text("Address\t");
+    ImGui::SameLine();
+    ImGui::Text("Instruction\t");
+
+    for (int i = 0; i < numInstructions; i++)
     {
-        ImGui::Text("%hu#06x", instr);
+        ImGui::Text("%#06x\t", initialAddress + i);
+        ImGui::SameLine();
+        ImGui::Text("%#06x\t", instructionStream[i]);
         // ImGui::SameLine();
+        ImGui::SameLine();
+        ImGui::Text("mov r1, 0x66");
     }
 
     ImGui::End();
+}
+
+std::string LC3VMdisawindow::Disa(uint16_t instr)
+{
+    uint8_t op = instr >> 12;
+	switch(op)
+    {
+        case OP_BR:
+            break;
+        default:
+            break;
+    }
 }

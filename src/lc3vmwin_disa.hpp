@@ -38,6 +38,7 @@ public:
     ~LC3VMdisawindow() = default;
 
     void Load(uint16_t instrStream[], uint16_t numInstr, uint16_t address);
+    std::string Disa(uint16_t instr);
     void Draw(void);
     
 };
