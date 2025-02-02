@@ -1,6 +1,7 @@
 #pragma once
 
 #include "globals.h"
+#include "lc3vmwin_disa_be.hpp"
 #include <imgui/imgui.h>
 #include <string>
 #include <vector>
@@ -17,6 +18,11 @@
 
     - uint16_t* instructions - the instructions themselves, as an array
 */
+
+std::string (*disa_call_table[])(uint16_t, uint16_t) = {
+	&dis_br, &dis_add, &dis_ld, &dis_st, &dis_jsr, &dis_and, &dis_ldr, &dis_str, 
+	&dis_rti, &dis_not, &dis_ldi, &dis_sti, &dis_jmp, &dis_rsv, &dis_lea, &dis_trap
+};
 
 class LC3VMdisawindow
 {

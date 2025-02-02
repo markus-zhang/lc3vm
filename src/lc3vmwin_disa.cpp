@@ -56,18 +56,15 @@ void LC3VMdisawindow::Draw(void)
     ImGui::SameLine();
     ImGui::Text("Instruction\t");
 
-    /*
-        TODO: Should get a string from the disassembly backend and display in the same line
-    */
-
     for (int i = 0; i < numInstructions; i++)
     {
-        ImGui::Text("%#06x\t", initialAddress + i);
+        u_int16_t instr = instructionStream[i];
+        ImGui::Text("%#06x\t", initialAddress + i * 2); // each instr is 2 bytes
         ImGui::SameLine();
-        ImGui::Text("%#06x\t", instructionStream[i]);
-        // ImGui::SameLine();
+        ImGui::Text("%#06x\t", instr);
         ImGui::SameLine();
-        ImGui::Text("mov r1, 0x66");
+        std::string disaOutput = disa_call_table[instr](instr, initialAddress);
+        ImGui::Text("%s", disaOutput.c_str());
     }
 
     ImGui::End();
