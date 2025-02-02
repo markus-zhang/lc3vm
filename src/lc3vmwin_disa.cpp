@@ -56,6 +56,10 @@ void LC3VMdisawindow::Draw(void)
     ImGui::SameLine();
     ImGui::Text("Instruction\t");
 
+    /*
+        TODO: Should get a string from the disassembly backend and display in the same line
+    */
+
     for (int i = 0; i < numInstructions; i++)
     {
         ImGui::Text("%#06x\t", initialAddress + i);
@@ -67,16 +71,4 @@ void LC3VMdisawindow::Draw(void)
     }
 
     ImGui::End();
-}
-
-std::string LC3VMdisawindow::Disa(uint16_t instr)
-{
-    uint8_t op = instr >> 12;
-	switch(op)
-    {
-        case OP_BR:
-            break;
-        default:
-            break;
-    }
 }

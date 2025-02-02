@@ -23,6 +23,8 @@ enum
     OP_TRAP
 };
 
+#define DISA_DEBUG_LEVEL 2
+
 void dis_debug(uint16_t instr, uint16_t address);
 std::string dis_br(uint16_t instr, uint16_t address);
 std::string dis_add(uint16_t instr, uint16_t address);

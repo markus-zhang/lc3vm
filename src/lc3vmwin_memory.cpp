@@ -5,7 +5,7 @@
     TODO:
     ! Draw()
     ! Editor()
-    - Quit_Confirm()
+    ! Quit_Confirm()
 */
 
 LC3VMMemorywindow::LC3VMMemorywindow(unsigned char* memory, int memorySize, const WindowConfig& config)
