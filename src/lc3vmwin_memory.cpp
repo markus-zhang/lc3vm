@@ -14,12 +14,12 @@ LC3VMMemorywindow::LC3VMMemorywindow(unsigned char* memory, int memorySize, cons
 
     buffer = std::vector<Glyph>(memorySize, {0, 255, 255, 255});
     bufferSize = memorySize;
-    for (int i = 0; ; i++)
+    for (int i = 0; i < bufferSize ; i++)
     {
-        if (*memory == '\0')
-        {
-            break;
-        }    
+        // if (*memory == '\0')
+        // {
+        //     break;
+        // }    
         buffer[i] = {*memory, 255, 255, 255};
         memory++;
     }
@@ -246,7 +246,18 @@ void LC3VMMemorywindow::Draw()
         }
     }
     ImGui::SameLine();
-    ImGui::Button("Page >");
+    if (ImGui::Button("Page >"))
+    {
+        // A page is 32 rows, so cannot scroll past that
+        if (initialAddress <= bufferSize - 33 * 16)    
+        {
+            initialAddress += 32 * 0x10;
+        }
+        else
+        {
+            initialAddress = bufferSize - 33 * 16;
+        }
+    }
 
     ImGui::PopStyleColor();
 

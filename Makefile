@@ -16,6 +16,8 @@ build_imgui:
 	./src/lc3vmwin_quit_confirm.cpp \
 	./src/lc3vmwin_memory.cpp \
 	./src/lc3vmwin_disa.cpp \
+	./src/lc3vmwin_disa_be.cpp \
+	./src/lc3vmwin_loader.cpp \
 	./src/lc3vmimgui.cpp \
 	./libs/imgui/*.cpp \
 	-I"./libs/" -L/usr/lib/x86_64-linux-gnu/debug/ \

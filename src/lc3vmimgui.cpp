@@ -13,6 +13,19 @@
 
 int main()
 {
+    /* -------------------Loading LC-3 binary into memory---------------------- */
+    uint16_t buffer[MAX_SIZE] = {0};
+    uint8_t memory[(MAX_SIZE) * 2] = {0};
+    FILE* fp = fopen("./2048.obj", "rb");
+    if (!fp)
+    {
+        std::cerr << "Failed to read file" << std::endl;
+        exit(ERROR_LOADFILE);
+    }
+	uint16_t numInstr = load_memory(buffer, memory, fp);
+    fclose(fp);
+
+    /* --------------------------------Loading End----------------------------- */
     SDL_Init(SDL_INIT_EVERYTHING);
 
     SDL_DisplayMode displayMode;
@@ -42,9 +55,9 @@ int main()
     ImGui_ImplSDLRenderer2_Init(renderer);
 
     // Memory Window
-    unsigned char text[] = "aaabcdefghijklmnopqrstuvwxyz";
+    // unsigned char text[] = "aaabcdefghijklmnopqrstuvwxyz";
     WindowConfig memoryWinConfig {true, 20, {848, 672}, {848, 672}, {0, 0}};
-    LC3VMMemorywindow memoryWindow = LC3VMMemorywindow(text, 640, memoryWinConfig);
+    LC3VMMemorywindow memoryWindow = LC3VMMemorywindow(memory, (unsigned long)(MAX_SIZE * 2), memoryWinConfig);
     
     uint16_t fakeInstr[100];
     for (int i = 0; i < 100; i++)

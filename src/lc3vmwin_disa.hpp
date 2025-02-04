@@ -19,10 +19,7 @@
     - uint16_t* instructions - the instructions themselves, as an array
 */
 
-std::string (*disa_call_table[])(uint16_t, uint16_t) = {
-	&dis_br, &dis_add, &dis_ld, &dis_st, &dis_jsr, &dis_and, &dis_ldr, &dis_str, 
-	&dis_rti, &dis_not, &dis_ldi, &dis_sti, &dis_jmp, &dis_rsv, &dis_lea, &dis_trap
-};
+// std::string (*disa_call_table[])(uint16_t, uint16_t);
 
 class LC3VMdisawindow
 {
