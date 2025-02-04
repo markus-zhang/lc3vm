@@ -415,7 +415,7 @@ uint16_t sign_extended(uint16_t num, uint8_t effBits)
 	}
 }
 
-std::string dis_debug(uint16_t instr, uint16_t address)
+void dis_debug(uint16_t instr, uint16_t address)
 {
 
 	if (DISA_DEBUG_LEVEL == 2)

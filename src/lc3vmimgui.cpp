@@ -1,6 +1,8 @@
 #include "lc3vmwin_memory.hpp"
 #include "lc3vmwin_quit_confirm.hpp"
 #include "lc3vmwin_disa.hpp"
+#include "lc3vmwin_loader.hpp"
+
 #include <iostream>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
