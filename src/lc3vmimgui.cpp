@@ -20,6 +20,7 @@ int init();
 void sdl_imgui_frame();
 
 // interpreter run function
+void interpreter_run();
 void run();
 void shutdown();
 void cache_run(struct lc3Cache cache);
@@ -81,7 +82,7 @@ enum
 
 uint16_t buffer[MAX_SIZE] = {0};
 uint8_t running = 1;
-struct termios original_tio;
+// struct termios original_tio;
 
 void (*instr_call_table[])(uint16_t) = {
 	&op_br, &op_add, &op_ld, &op_st, &op_jsr, &op_and, &op_ldr, &op_str, 
@@ -122,6 +123,9 @@ int main()
 
 int init()
 {
+    reg[R_COND] = FL_ZRO;
+	reg[R_PC] = 0x3000;
+
     FILE* fp = fopen("./2048.obj", "rb");
     if (!fp)
     {
@@ -403,18 +407,21 @@ void interpreter_run()
 			int newCacheIndex = cacheCount;
 			cache_add(newCache);
 
-			if (DEBUG == DEBUG_DIS)
+			if (DEBUG_MODE == DEBUG_DIS)
 			{
-				FILE* dump = fopen("cache_dump.txt", "a");
+				// FILE* dump = fopen("cache_dump.txt", "a");
 				cache_dump(newCacheIndex);
+                // It is required to run sdl_imgui_frame() just for visually check the code
+                // The code is loaded into the disa window but we must draw it on screen
+                sdl_imgui_frame();
 			}
 
-			cache_run(codeCache[newCacheIndex]);
+			// cache_run(codeCache[newCacheIndex]);
 		}
 		// if found, then execute
 		else
 		{
-			cache_run(codeCache[cacheIndex]);
+			// cache_run(codeCache[cacheIndex]);
 		}
 	}
 }

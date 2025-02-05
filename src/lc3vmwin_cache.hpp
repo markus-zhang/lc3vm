@@ -1,11 +1,10 @@
-#ifndef _LC3VMCACHE_HPP_
-#define _LC3VMCACHE_HPP_
+#pragma once
 
 #include <cstdint>
 
 #define CACHE_SIZE_MAX 	1024	// I figured 1024 code blocks should be kinda enough
 #define CODE_BLOCK_SIZE 256		// 256 instructions without jmp/ret/jsr/trap? No way...
-#define CACHE_DEBUG		1		// 1 for debug
+// #define CACHE_DEBUG		1		// 1 for debug
 
 struct lc3Cache
 {
@@ -28,5 +27,3 @@ int cache_find(uint16_t address);
 uint8_t get_opcode(uint16_t instr);
 int is_branch(uint8_t opcode);
 void write_16bit(uint16_t* targetArray, uint16_t targetIndex, uint16_t value);
-
-#endif

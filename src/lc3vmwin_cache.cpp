@@ -3,7 +3,7 @@
 */
 
 #include "lc3disa.hpp"
-#include "lc3vmcache.hpp"
+#include "lc3vmwin_cache.hpp"
 #include <iostream>
 
 int cacheCount = 0;

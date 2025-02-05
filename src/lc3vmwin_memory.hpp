@@ -1,5 +1,4 @@
-#ifndef _LC3VMWIN_MEMORY_HPP_
-#define _LC3VMWIN_MEMORY_HPP_
+#pragma once
 
 #include "globals.h"
 #include <string>
@@ -42,5 +41,3 @@ public:
 //     ImFont* font = io.Fonts->AddFontDefault();
 //     font->CalcTextSizeA()
 // }
-
-#endif
