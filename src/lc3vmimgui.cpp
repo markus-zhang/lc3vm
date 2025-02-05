@@ -178,7 +178,7 @@ int init()
     {
         fakeInstr[i] = 0x12ef;
     }
-    WindowConfig disaWinConfig {true, 20, {320, 480}, {320, 480}, {1024, 0}};
+    WindowConfig disaWinConfig {true, 20, {360, 480}, {360, 480}, {1024, 0}};
     disaWindow = LC3VMdisawindow(fakeInstr, 100, 0x3000, disaWinConfig);
 
     signalQuit = false;

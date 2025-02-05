@@ -48,9 +48,9 @@ std::string dis_add(uint16_t instr, uint16_t address)
 
 	ss << "ADD\t";
 
-	uint8_t dr = (instr >> 9) & 0x0007;
+	int dr = (instr >> 9) & 0x0007;
 	ss << 'r' << dr << '\t';
-	uint8_t sr = (instr >> 6) & 0x0007;
+	int sr = (instr >> 6) & 0x0007;
 	ss << 'r' << sr << '\t';
 
 	uint8_t mode = (instr >> 5) & 0x0001;
@@ -61,7 +61,7 @@ std::string dis_add(uint16_t instr, uint16_t address)
 	}
 	else 
 	{
-		uint8_t sr2 = instr & 0x0007;
+		int sr2 = instr & 0x0007;
 		ss << 'r' << sr2;
 	}
 
@@ -81,10 +81,13 @@ std::string dis_ld(uint16_t instr, uint16_t address)
 
 	ss << "LD\t";
 
-	uint8_t dr = (instr >> 9) & 0x0007;
+	// Don't use uint8_t because it is unsigned char and stringstream treats it as a char, not an integer
+	int dr = (instr >> 9) & 0x0007;
 	ss << 'r' << dr << '\t';
+	// printf("dr is: %d\n", dr);
 
 	ss << "0x" << std::hex << std::setfill('0') << std::setw(4) << static_cast<int>(sign_extended(instr & 0x01FF, 9));
+	// printf("%s\n", ss.str().c_str());
 
 	return ss.str();
 }
@@ -102,7 +105,7 @@ std::string dis_st(uint16_t instr, uint16_t address)
 
 	ss << "LD\t";
 
-	uint8_t sr = (instr >> 9) & 0x0007;
+	int sr = (instr >> 9) & 0x0007;
 	ss << 'r' << sr << '\t';
 
 	ss << "0x" << std::hex << std::setfill('0') << std::setw(4) << static_cast<int>(sign_extended(instr & 0x01FF, 9));
@@ -157,9 +160,9 @@ std::string dis_and(uint16_t instr, uint16_t address)
 
 	ss << "AND\t";
 
-	uint8_t dr = (instr >> 9) & 0x0007;
+	int dr = (instr >> 9) & 0x0007;
 	ss << 'r' << dr << '\t';
-	uint8_t sr = (instr >> 6) & 0x0007;
+	int sr = (instr >> 6) & 0x0007;
 	ss << 'r' << sr << '\t';
 
 	uint8_t mode = (instr >> 5) & 0x0001;
@@ -169,7 +172,7 @@ std::string dis_and(uint16_t instr, uint16_t address)
 	}
 	else
 	{
-		uint8_t sr2 = instr & 0x0007;
+		int sr2 = instr & 0x0007;
 		ss << 'r' << sr2 << '\t';
 	}
 
@@ -189,9 +192,9 @@ std::string dis_ldr(uint16_t instr, uint16_t address)
 
 	ss << "LDR\t";
 
-	uint8_t dr = (instr >> 9) & 0x0007;
+	int dr = (instr >> 9) & 0x0007;
 	ss << 'r' << dr << '\t';
-	uint8_t sr = (instr >> 6) & 0x0007;
+	int sr = (instr >> 6) & 0x0007;
 	ss << 'r' << sr << '\t';
 
 	ss << "0x" << std::hex << std::setfill('0') << std::setw(4) << static_cast<int>(sign_extended(instr & 0x003F, 6));
@@ -211,9 +214,9 @@ std::string dis_str(uint16_t instr, uint16_t address)
 
 	ss << "STR\t";
 
-	uint8_t sr = (instr >> 9) & 0x0007;
+	int sr = (instr >> 9) & 0x0007;
 	ss << 'r' << sr << '\t';
-	uint8_t br = (instr >> 6) & 0x0007;
+	int br = (instr >> 6) & 0x0007;
 	ss << 'r' << br << '\t';
 
 	ss << "0x" << std::hex << std::setfill('0') << std::setw(4) << static_cast<int>(sign_extended(instr & 0x003F, 6));
@@ -243,9 +246,9 @@ std::string dis_not(uint16_t instr, uint16_t address)
 
 	ss << "NOT\t";
 
-	uint8_t sr = (instr >> 9) & 0x0007;
+	int sr = (instr >> 9) & 0x0007;
 	ss << 'r' << sr << '\t';
-	uint8_t br = (instr >> 6) & 0x0007;
+	int br = (instr >> 6) & 0x0007;
 	ss << 'r' << br << '\t';
 
 	return ss.str();
@@ -263,7 +266,7 @@ std::string dis_ldi(uint16_t instr, uint16_t address)
 
 	ss << "LDI\t";
 
-	uint8_t dr = (instr >> 9) & 0x0007;
+	int dr = (instr >> 9) & 0x0007;
 	ss << 'r' << dr << '\t';
 
 	ss << "0x" << std::hex << std::setfill('0') << std::setw(4) << static_cast<int>(sign_extended(instr & 0x01FF, 9));
@@ -283,7 +286,7 @@ std::string dis_sti(uint16_t instr, uint16_t address)
 
 	ss << "STI\t";
 
-	uint8_t sr = (instr >> 9) & 0x0007;
+	int sr = (instr >> 9) & 0x0007;
 	ss << 'r' << sr << '\t';
 
 	ss << "0x" << std::hex << std::setfill('0') << std::setw(4) << static_cast<int>(sign_extended(instr & 0x01FF, 9));
@@ -306,7 +309,7 @@ std::string dis_jmp(uint16_t instr, uint16_t address)
 	dis_debug(instr, address);
 
 	/* This instruction is a bit special, could be RET if BaseR is R7 */
-	uint8_t br = (instr >> 6) & 0x0007;
+	int br = (instr >> 6) & 0x0007;
 
 	if (br == 7)
 	{
@@ -318,7 +321,7 @@ std::string dis_jmp(uint16_t instr, uint16_t address)
 		/* JMP */
 		ss << "RET\t";
 
-		uint8_t sr = (instr >> 6) & 0x0007;
+		int sr = (instr >> 6) & 0x0007;
 		ss << 'r' << sr << '\t';
 	}
 
@@ -347,7 +350,7 @@ std::string dis_lea(uint16_t instr, uint16_t address)
 
 	ss << "LEA\t";
 
-	uint8_t dr = (instr >> 9) & 0x0007;
+	int dr = (instr >> 9) & 0x0007;
 	ss << 'r' << dr << '\t';
 
 	ss << "0x" << std::hex << std::setfill('0') << std::setw(4) << static_cast<int>(sign_extended(instr & 0x01FF, 9));
@@ -421,16 +424,16 @@ void dis_debug(uint16_t instr, uint16_t address)
 	if (DISA_DEBUG_LEVEL == 2)
 	{
 		// Show current instruction in hex and mnenomics
-		printf("Instruction to be executed - %#06x\n", instr);
-		printf("15 14 13 12 11 10 09 08 07 06 05 04 03 02 01 00\n");
+		// printf("Instruction to be executed - %#06x\n", instr);
+		// printf("15 14 13 12 11 10 09 08 07 06 05 04 03 02 01 00\n");
 		for (int i = 15; i >= 0; i--)
 		{
 			printf("%hhu  ", (instr >> i) & 0x01);
 		}
 		printf("\n");
-	}
 
-	// First we print the address
-	printf("Address: %#06x\t", (unsigned int)address);
-	printf("%#06x\t", instr);
+		// First we print the address
+		printf("Address: %#06x\t", (unsigned int)address);
+		printf("%#06x\t", instr);
+	}
 }
