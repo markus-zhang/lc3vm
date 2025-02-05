@@ -1,12 +1,27 @@
 #include "lc3vmwin_memory.hpp"
 #include <iomanip>
 
-/*
-    TODO:
-    ! Draw()
-    ! Editor()
-    ! Quit_Confirm()
-*/
+
+LC3VMMemorywindow::LC3VMMemorywindow()
+{
+    buffer.reserve(0);
+    bufferSize = 0;
+    readonly = true;
+    fontSize = 14;
+    initialWindowSize = {0, 0};
+    minWindowSize = {0, 0};
+    winPos = {0, 0};
+    initialized = false;
+    font = nullptr;
+    initialAddress = 0x0000;
+    selection.reserve(0);
+    mouseDoubleClicked = false;
+    mousePos = {0, 0};
+    editorMode = false;
+    memoryEditedIndex = 0x0000;
+    memoryEditedIndexLocked = false;
+    quitSignal = false;
+}
 
 LC3VMMemorywindow::LC3VMMemorywindow(unsigned char* memory, int memorySize, const WindowConfig& config)
 {

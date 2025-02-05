@@ -36,7 +36,7 @@ public:
 
     bool initialized;
 
-    LC3VMdisawindow() = delete;
+    LC3VMdisawindow();
     LC3VMdisawindow(uint16_t instrStream[], uint16_t numInstr, uint16_t address, const WindowConfig& config);
     ~LC3VMdisawindow() = default;
 

@@ -1,9 +1,25 @@
 #include "lc3vmwin_disa.hpp"
 
+
 std::string (*disa_call_table[])(uint16_t, uint16_t) = {
 	&dis_br, &dis_add, &dis_ld, &dis_st, &dis_jsr, &dis_and, &dis_ldr, &dis_str, 
 	&dis_rti, &dis_not, &dis_ldi, &dis_sti, &dis_jmp, &dis_rsv, &dis_lea, &dis_trap
 };
+
+LC3VMdisawindow::LC3VMdisawindow()
+{
+    initialAddress = 0x0000;
+    numInstructions = 0;
+    instructionStream.reserve(0);
+    selection.reserve(0);
+
+    initialWindowSize = {0, 0};
+    minWindowSize = {0, 0};
+    winPos = {0, 0};
+
+    font = nullptr;
+    initialized = false;
+}
 
 LC3VMdisawindow::LC3VMdisawindow(uint16_t instrStream[], uint16_t numInstr, uint16_t address, const WindowConfig& config)
 {

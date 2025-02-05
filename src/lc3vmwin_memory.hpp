@@ -26,7 +26,8 @@ public:
     bool memoryEditedIndexLocked;
     bool quitSignal;
 
-    LC3VMMemorywindow() = delete;
+    /* We need a default constructor to write LC3VMMemorywindow window; */
+    LC3VMMemorywindow();
     LC3VMMemorywindow(unsigned char* memory, int memorySize, const WindowConfig& config);
     ~LC3VMMemorywindow() = default;
 
