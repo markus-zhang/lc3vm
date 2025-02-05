@@ -40,6 +40,7 @@ public:
     LC3VMdisawindow(uint16_t instrStream[], uint16_t numInstr, uint16_t address, const WindowConfig& config);
     ~LC3VMdisawindow() = default;
 
+    void Load_Config(const WindowConfig& config);
     void Load(uint16_t instrStream[], uint16_t numInstr, uint16_t address);
     void Draw(void);
     

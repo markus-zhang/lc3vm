@@ -173,13 +173,13 @@ int init()
     WindowConfig memoryWinConfig {true, 20, {848, 672}, {848, 672}, {0, 0}};
     memoryWindow = LC3VMMemorywindow(memory, (unsigned long)(MAX_SIZE * 2), memoryWinConfig);
     
-    uint16_t fakeInstr[100];
-    for (int i = 0; i < 100; i++)
-    {
-        fakeInstr[i] = 0x12ef;
-    }
+    // uint16_t fakeInstr[100];
+    // for (int i = 0; i < 100; i++)
+    // {
+    //     fakeInstr[i] = 0x12ef;
+    // }
     WindowConfig disaWinConfig {true, 20, {360, 480}, {360, 480}, {1024, 0}};
-    disaWindow = LC3VMdisawindow(fakeInstr, 100, 0x3000, disaWinConfig);
+    disaWindow.Load_Config(disaWinConfig);
 
     signalQuit = false;
     isRunning = true;

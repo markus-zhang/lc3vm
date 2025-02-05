@@ -43,6 +43,13 @@ LC3VMdisawindow::LC3VMdisawindow(uint16_t instrStream[], uint16_t numInstr, uint
     initialized = false;
 }
 
+void LC3VMdisawindow::Load_Config(const WindowConfig& config)
+{
+    initialWindowSize = config.initialWindowSize;
+    minWindowSize = config.minWindowSize;
+    winPos = config.winPos;
+}
+
 void LC3VMdisawindow::Load(uint16_t instrStream[], uint16_t numInstr, uint16_t address)
 {
     instructionStream = std::vector<uint16_t>(instrStream, instrStream + numInstr);
