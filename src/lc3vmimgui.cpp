@@ -1,3 +1,4 @@
+#include "globals.h"
 #include "lc3vmwin_memory.hpp"
 #include "lc3vmwin_quit_confirm.hpp"
 #include "lc3vmwin_disa.hpp"
@@ -17,6 +18,7 @@
 int init();
 
 // SDL2 and ImGui frame
+void input();
 void sdl_imgui_frame();
 
 // interpreter run function
@@ -55,6 +57,8 @@ void trap_0x25();
 /* ------- function declarations end --------*/
 
 /* Global variables BEGIN -------------------------------------*/
+uint8_t DEBUG_MODE = DEBUG_DIS;
+
 // LC-3 specific BEGIN ------------------------------------------
 enum
 {
@@ -185,101 +189,105 @@ int init()
     return 0;
 }
 
-void sdl_imgui_frame()
+void input()
 {
     // Process Input
-        SDL_Event sdlEvent;
-        while (SDL_PollEvent(&sdlEvent))
+    SDL_Event sdlEvent;
+    while (SDL_PollEvent(&sdlEvent))
+    {
+        // Handle ImGui SDL input
+        ImGui_ImplSDL2_ProcessEvent(&sdlEvent);
+        ImGuiIO& io = ImGui::GetIO();
+
+        int mouseX, mouseY;
+
+        const int buttons = SDL_GetMouseState(&mouseX, &mouseY);
+        io.MousePos = ImVec2(mouseX, mouseY);
+        io.MouseDown[0] = buttons & SDL_BUTTON(SDL_BUTTON_LEFT);
+        io.MouseDown[1] = buttons & SDL_BUTTON(SDL_BUTTON_RIGHT);
+
+        // Handle core SDL events
+        switch (sdlEvent.type)
         {
-            // Handle ImGui SDL input
-            ImGui_ImplSDL2_ProcessEvent(&sdlEvent);
-            ImGuiIO& io = ImGui::GetIO();
-
-            int mouseX, mouseY;
-
-            const int buttons = SDL_GetMouseState(&mouseX, &mouseY);
-            io.MousePos = ImVec2(mouseX, mouseY);
-            io.MouseDown[0] = buttons & SDL_BUTTON(SDL_BUTTON_LEFT);
-            io.MouseDown[1] = buttons & SDL_BUTTON(SDL_BUTTON_RIGHT);
-
-            // Handle core SDL events
-            switch (sdlEvent.type)
+            case SDL_QUIT:
             {
-                case SDL_QUIT:
+                signalQuit = false;
+                break;
+            }
+            case SDL_KEYDOWN:
+            {
+                if (sdlEvent.key.keysym.sym == SDLK_ESCAPE)
                 {
-                    signalQuit = false;
-                    break;
+                    // When editing, esc is used to close the editor mini window
+                    // as editorMode is the controlling boolean
+                    if (!memoryWindow.editorMode)
+                    {
+                        signalQuit = true;
+                    }
+                    else
+                    {
+                        // mouseDoubleClicked needs to set false, otherwise it keeps opening the editor window
+                        memoryWindow.editorMode = false;
+                    }
                 }
-                case SDL_KEYDOWN:
+                else if (sdlEvent.key.keysym.sym == SDLK_d)
                 {
-                    if (sdlEvent.key.keysym.sym == SDLK_ESCAPE)
+                    // We don't want the whole debug window closed when user types 'd', do we?
+                    if (!memoryWindow.editorMode)
                     {
-                        // When editing, esc is used to close the editor mini window
-                        // as editorMode is the controlling boolean
-                        if (!memoryWindow.editorMode)
-                        {
-                            signalQuit = true;
-                        }
-                        else
-                        {
-                            // mouseDoubleClicked needs to set false, otherwise it keeps opening the editor window
-                            memoryWindow.editorMode = false;
-                        }
+                        isDebug = !isDebug;
                     }
-                    else if (sdlEvent.key.keysym.sym == SDLK_d)
+                }
+                else if (sdlEvent.key.keysym.sym == SDLK_g)
+                {
+                    // TODO: This is probably not a great way to disable certain keys
+                    // Just imagine what happens if we have a dozen of such switches
+                    if (!memoryWindow.editorMode)
                     {
-                        // We don't want the whole debug window closed when user types 'd', do we?
-                        if (!memoryWindow.editorMode)
-                        {
-                            isDebug = !isDebug;
-                        }
-                    }
-                    else if (sdlEvent.key.keysym.sym == SDLK_g)
-                    {
-                        // TODO: This is probably not a great way to disable certain keys
-                        // Just imagine what happens if we have a dozen of such switches
-                        if (!memoryWindow.editorMode)
-                        {
-                            isDisa = !isDisa;
-                        }
+                        isDisa = !isDisa;
                     }
                 }
             }
         }
+    }
+}
+
+void sdl_imgui_frame()
+{
         
-        /* ----------------------- RENDERING PART -------------------------- */
+    /* ----------------------- RENDERING PART -------------------------- */
 
-        SDL_SetRenderDrawColor(renderer, 21, 21, 21, 255);
-        SDL_RenderClear(renderer);
+    SDL_SetRenderDrawColor(renderer, 21, 21, 21, 255);
+    SDL_RenderClear(renderer);
 
-        // ImGui part BEGIN --------------------------------------------------
-        /*
-            One important part is that all ImGui windows need to be within the same NewFrame(),
-            otherwise weird shits happen - e.g. mouse doesn't work on any of the windows somehow
-        */
-        ImGui_ImplSDLRenderer2_NewFrame();
-        ImGui_ImplSDL2_NewFrame();
-        ImGui::NewFrame();
-        if (isDebug)
-        {
-            memoryWindow.Draw();
-        }
+    // ImGui part BEGIN --------------------------------------------------
+    /*
+        One important part is that all ImGui windows need to be within the same NewFrame(),
+        otherwise weird shits happen - e.g. mouse doesn't work on any of the windows somehow
+    */
+    ImGui_ImplSDLRenderer2_NewFrame();
+    ImGui_ImplSDL2_NewFrame();
+    ImGui::NewFrame();
+    if (isDebug)
+    {
+        memoryWindow.Draw();
+    }
 
-        if (isDisa)
-        {
-            disaWindow.Draw();
-        }
+    if (isDisa)
+    {
+        disaWindow.Draw();
+    }
 
-        if (signalQuit)
-        {
-            signalQuit = Quit_Confirm(&isRunning);
-        }
+    if (signalQuit)
+    {
+        signalQuit = Quit_Confirm(&isRunning);
+    }
 
-        ImGui::Render();
-        ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), renderer);
-        // ImGui part END ----------------------------------------------------
+    ImGui::Render();
+    ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), renderer);
+    // ImGui part END ----------------------------------------------------
 
-        SDL_RenderPresent(renderer);
+    SDL_RenderPresent(renderer);
 }
 
 void run()
@@ -395,8 +403,10 @@ void shutdown()
 
 void interpreter_run()
 {
-	while (running)
+	while (isRunning)
 	{
+        input();
+
 		uint16_t lc3Address = reg[R_PC];
 		int cacheIndex = cache_find(lc3Address);
 
@@ -422,6 +432,7 @@ void interpreter_run()
 		else
 		{
 			// cache_run(codeCache[cacheIndex]);
+            sdl_imgui_frame();
 		}
 	}
 }

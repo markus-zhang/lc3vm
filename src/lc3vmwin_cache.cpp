@@ -23,7 +23,11 @@ struct lc3Cache cache_create_block(uint8_t memory[], uint16_t lc3Address)
 
 	while (1)
 	{
-		uint16_t instr = memory[lc3Address] + memory[lc3Address + 1] << 8;
+		uint16_t lowByte = (memory[lc3Address]) << 8;
+		uint16_t highByte = memory[(lc3Address + 1)];
+		uint16_t instr = highByte + lowByte;
+		printf("instr is %#06x\n", instr);
+		printf("opcode is %#04x\n", instr >> 12);
 		write_16bit(codeBlock, numInstr, instr);
 		numInstr++;
 		/*

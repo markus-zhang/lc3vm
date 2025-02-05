@@ -84,7 +84,7 @@ void LC3VMdisawindow::Draw(void)
         ImGui::SameLine();
         ImGui::Text("%#06x\t", instr);
         ImGui::SameLine();
-        std::string disaOutput = disa_call_table[instr](instr, initialAddress);
+        std::string disaOutput = disa_call_table[instr >> 12](instr, initialAddress);
         ImGui::Text("%s", disaOutput.c_str());
     }
 
