@@ -1,6 +1,6 @@
 #include "lc3vmwin_loader.hpp"
 
-uint64_t load_memory(uint16_t buffer[], uint8_t memory[], FILE* fp)
+uint16_t load_memory(uint16_t buffer[], uint8_t memory[], FILE* fp)
 {
     uint16_t org = 0;
     lc3_loader_header(&org, 1, fp);
@@ -9,7 +9,7 @@ uint64_t load_memory(uint16_t buffer[], uint8_t memory[], FILE* fp)
     printf("org is: %hu", org);
 
     // We read the rest into memory
-    int size = fread(buffer, 2, MAX_SIZE, fp);
+    size_t size = fread(buffer, 2, MAX_SIZE, fp);
     printf("Number of instructions: %d\n", size);
 
     if (size <= 0)
@@ -33,7 +33,7 @@ uint64_t load_memory(uint16_t buffer[], uint8_t memory[], FILE* fp)
 uint16_t swap16(uint16_t value)
 {
 	// For translating endianness
-	uint16_t result = ((value >> 8) & 0x00FF) + ((value << 8) & 0xFF00);
+	uint16_t result = (uint16_t)((value >> 8) & 0x00FF) + (uint16_t)((value << 8) & 0xFF00);
 	return result;
 }
 

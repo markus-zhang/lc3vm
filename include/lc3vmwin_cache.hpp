@@ -14,7 +14,7 @@ struct lc3Cache
 };
 
 // tracks the count of codeBlocks
-extern int cacheCount;
+extern uint16_t cacheCount;
 
 extern struct lc3Cache codeCache[];
 

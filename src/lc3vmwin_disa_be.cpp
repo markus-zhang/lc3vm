@@ -368,7 +368,7 @@ std::string dis_trap(uint16_t instr, uint16_t address)
 
 	dis_debug(instr, address);
 
-	uint8_t trapvect8 = instr & 0x00FF;
+	uint8_t trapvect8 = (uint8_t)(instr & 0x00FF);
 	switch (trapvect8)
 	{
 		case 0x20:

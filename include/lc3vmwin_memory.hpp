@@ -21,13 +21,13 @@ public:
     bool mouseDoubleClicked;
     ImVec2 mousePos;
     bool editorMode;
-    int memoryEditedIndex;
+    size_t memoryEditedIndex;
     bool memoryEditedIndexLocked;
     bool quitSignal;
 
     /* We need a default constructor to write LC3VMMemorywindow window; */
     LC3VMMemorywindow();
-    LC3VMMemorywindow(unsigned char* memory, int memorySize, const WindowConfig& config);
+    LC3VMMemorywindow(unsigned char* memory, size_t memorySize, const WindowConfig& config);
     ~LC3VMMemorywindow() = default;
 
     void Draw();

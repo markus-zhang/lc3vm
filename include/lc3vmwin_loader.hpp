@@ -31,7 +31,7 @@
     load the binary at filePath into memory, returns number of bytes read.
     If endian is different from host architecture, set swapEndian to true (e.g. LC-3 to Intel x64)
 */
-uint64_t load_memory(uint16_t buffer[], uint8_t memory[], FILE* fp);
+uint16_t load_memory(uint16_t buffer[], uint8_t memory[], FILE* fp);
 
 uint16_t swap16(uint16_t value);
 

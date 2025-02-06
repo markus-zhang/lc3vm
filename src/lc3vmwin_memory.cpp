@@ -23,13 +23,13 @@ LC3VMMemorywindow::LC3VMMemorywindow()
     quitSignal = false;
 }
 
-LC3VMMemorywindow::LC3VMMemorywindow(unsigned char* memory, int memorySize, const WindowConfig& config)
+LC3VMMemorywindow::LC3VMMemorywindow(unsigned char* memory, size_t memorySize, const WindowConfig& config)
 {
     assert(memory != nullptr);
 
     buffer = std::vector<Glyph>(memorySize, {0, 255, 255, 255});
     bufferSize = memorySize;
-    for (int i = 0; i < bufferSize ; i++)
+    for (size_t i = 0; i < bufferSize ; i++)
     {
         // if (*memory == '\0')
         // {
@@ -167,7 +167,7 @@ void LC3VMMemorywindow::Draw()
     // {       
     // }
     
-    for (int i = initialAddress; i < initialAddress + 32 * 16; i++)
+    for (size_t i = initialAddress; i < initialAddress + 32 * 16; i++)
     {
         /*
             Starting from initialAddress, we only render 512 selectables each frame
@@ -222,7 +222,7 @@ void LC3VMMemorywindow::Draw()
             if (!memoryEditedIndexLocked && editorMode && ImGui::IsItemHovered())
             {
                 memoryEditedIndex = i;
-                printf("Index captured: %d\n", memoryEditedIndex);
+                printf("Index captured: %ld\n", memoryEditedIndex);
                 memoryEditedIndexLocked = true;
             }
         }
@@ -233,7 +233,7 @@ void LC3VMMemorywindow::Draw()
         {
             ImGui::Text(" ");
             // print the ASCII stuffs
-            for (int j = i - 15; j <= i; j++)
+            for (size_t j = i - 15; j <= i; j++)
             {
                 char ascii = buffer[j].ch;
                 ss << (std::isprint(ascii) ? ascii : '.');
@@ -270,7 +270,7 @@ void LC3VMMemorywindow::Draw()
         }
         else
         {
-            initialAddress = bufferSize - 33 * 16;
+            initialAddress = (uint16_t)(bufferSize - 33 * 16);
         }
     }
 
@@ -318,15 +318,15 @@ unsigned char LC3VMMemorywindow::Calculate_Char(char buf[], char original)
 
     if (c1 >= '0' && c1 <= '9')
     {
-        result = (c1 - '0') * 16;
+        result = (unsigned char)((c1 - '0') * 16);
     }
     else if (c1 >= 'A' && c1 <= 'F')
     {
-        result = (c1 - 'A' + 10) * 16;
+        result = (unsigned char)((c1 - 'A' + 10) * 16);
     }
     else if (c1 >= 'a' && c1 <= 'f')
     {
-        result = (c1 - 'a' + 10) * 16;
+        result = (unsigned char)((c1 - 'a' + 10) * 16);
     }
     else 
     {
@@ -335,15 +335,15 @@ unsigned char LC3VMMemorywindow::Calculate_Char(char buf[], char original)
 
     if (c0 >= '0' && c0 <= '9')
     {
-        result += (c0 - '0');
+        result += (unsigned char)(c0 - '0');
     }
     else if (c0 >= 'A' && c0 <= 'F')
     {
-        result += (c0 - 'A' + 10);
+        result += (unsigned char)(c0 - 'A' + 10);
     }
     else if (c0 >= 'a' && c0 <= 'f')
     {
-        result += (c0 - 'a' + 10);
+        result += (unsigned char)(c0 - 'a' + 10);
     }
     else 
     {

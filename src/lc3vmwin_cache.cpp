@@ -6,7 +6,7 @@
 #include "lc3vmwin_cache.hpp"
 #include <iostream>
 
-int cacheCount = 0;
+uint16_t cacheCount = 0;
 struct lc3Cache codeCache[CACHE_SIZE_MAX];
 
 struct lc3Cache cache_create_block(uint8_t memory[], uint16_t lc3Address)
@@ -19,7 +19,7 @@ struct lc3Cache cache_create_block(uint8_t memory[], uint16_t lc3Address)
 		printf("%s at line %d: codeBlock created failure\n", __FILE__, __LINE__);
 		std::cout << __FILE__ << "at line " << __LINE__ << ": codeBlock created failure" << std::endl;
 	}
-	int numInstr = 0;
+	uint16_t numInstr = 0;
 
 	while (true)
 	{
@@ -48,7 +48,7 @@ struct lc3Cache cache_create_block(uint8_t memory[], uint16_t lc3Address)
 
 void cache_clear()
 {
-	for(int i = cacheCount; i > 0; i--)
+	for(uint16_t i = cacheCount; i > 0; i--)
 	{
 		delete codeCache[i - 1].codeBlock;
 	}
@@ -74,7 +74,7 @@ void cache_add(struct lc3Cache c)
 
 int cache_find(uint16_t address)
 {
-	for (int i = 0; i < cacheCount; i++)
+	for (uint16_t i = 0; i < cacheCount; i++)
 	{
 		if (codeCache[i].lc3MemAddress == address)
 		{
@@ -89,7 +89,7 @@ int cache_find(uint16_t address)
 
 uint8_t get_opcode(uint16_t instr)
 {
-	return (instr >> 12) & 0x000F;
+	return (uint8_t)((instr >> 12) & 0x000F);
 }
 
 /* returns 1 if it's a br/jmp/ret/jsr, 0 otherwise (trap is allowed to stay) */

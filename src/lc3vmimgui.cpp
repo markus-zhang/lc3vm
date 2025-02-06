@@ -170,7 +170,7 @@ int init()
 
     // Memory Window
     WindowConfig memoryWinConfig {true, 20, {848, 672}, {848, 672}, {0, 0}};
-    memoryWindow = LC3VMMemorywindow(memory, (unsigned long)(MAX_SIZE * 2), memoryWinConfig);
+    memoryWindow = LC3VMMemorywindow(memory, (size_t)(MAX_SIZE * 2), memoryWinConfig);
     
     // Insturction Cache Window
     WindowConfig disaWinConfig {true, 20, {360, 480}, {360, 480}, {1024, 0}};
@@ -196,7 +196,7 @@ void input()
 
         int mouseX, mouseY;
 
-        const int buttons = SDL_GetMouseState(&mouseX, &mouseY);
+        const Uint32 buttons = SDL_GetMouseState(&mouseX, &mouseY);
         io.MousePos = ImVec2(mouseX, mouseY);
         io.MouseDown[0] = buttons & SDL_BUTTON(SDL_BUTTON_LEFT);
         io.MouseDown[1] = buttons & SDL_BUTTON(SDL_BUTTON_RIGHT);
