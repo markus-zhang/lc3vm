@@ -1,6 +1,6 @@
 #pragma once
 
-#include "globals.h"
+#include "globals.hpp"
 #include "lc3vmwin_disa_be.hpp"
 #include <imgui/imgui.h>
 #include <string>

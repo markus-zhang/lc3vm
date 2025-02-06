@@ -5,7 +5,7 @@
     The caller object should prepare the memory and passes it here
 */
 
-#include "globals.h"
+#include "globals.hpp"
 #include <string>
 #include <iostream>
 

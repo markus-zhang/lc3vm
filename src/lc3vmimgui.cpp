@@ -1,4 +1,4 @@
-#include "globals.h"
+#include "globals.hpp"
 #include "lc3vmwin_memory.hpp"
 #include "lc3vmwin_quit_confirm.hpp"
 #include "lc3vmwin_disa.hpp"
@@ -169,15 +169,10 @@ int init()
     ImGui_ImplSDLRenderer2_Init(renderer);
 
     // Memory Window
-    // unsigned char text[] = "aaabcdefghijklmnopqrstuvwxyz";
     WindowConfig memoryWinConfig {true, 20, {848, 672}, {848, 672}, {0, 0}};
     memoryWindow = LC3VMMemorywindow(memory, (unsigned long)(MAX_SIZE * 2), memoryWinConfig);
     
-    // uint16_t fakeInstr[100];
-    // for (int i = 0; i < 100; i++)
-    // {
-    //     fakeInstr[i] = 0x12ef;
-    // }
+    // Insturction Cache Window
     WindowConfig disaWinConfig {true, 20, {360, 480}, {360, 480}, {1024, 0}};
     disaWindow.Load_Config(disaWinConfig);
 

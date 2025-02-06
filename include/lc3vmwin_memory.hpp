@@ -1,6 +1,6 @@
 #pragma once
 
-#include "globals.h"
+#include "globals.hpp"
 #include <string>
 #include <vector>
 
