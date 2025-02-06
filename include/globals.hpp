@@ -1,6 +1,6 @@
 #pragma once
 
-#include <imgui/imgui.h>
+#include <imgui.h>
 #include <cinttypes>
 
 #define MAX_SIZE 65536

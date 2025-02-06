@@ -1,6 +1,6 @@
 cmake_minimum_required( VERSION 3.16 )
 
-project( lc3vmwin VERSION 0.1 )
+project( lc3vmimgui_debug VERSION 0.1 )
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -8,9 +8,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Set build type to Debug
 set(CMAKE_BUILD_TYPE Debug)
-
-# Include directories (for your headers and ImGui)
-target_include_directories(lc3vmimgui_debug PRIVATE include libs/imgui)
 
 # Source files
 file(GLOB SRC_FILES 
@@ -28,6 +25,9 @@ file(GLOB IMGUI_SRC_FILES
 )
 
 add_executable(lc3vmimgui_debug ${SRC_FILES} ${IMGUI_SRC_FILES})
+
+# Include directories (for your headers and ImGui)
+target_include_directories(lc3vmimgui_debug PRIVATE ./include ./libs/imgui)
 
 # Compiler warnings and flags
 target_compile_options(lc3vmimgui_debug PRIVATE

@@ -2,7 +2,7 @@
 
 #include "globals.hpp"
 #include "lc3vmwin_disa_be.hpp"
-#include <imgui/imgui.h>
+#include <imgui.h>
 #include <string>
 #include <vector>
 
