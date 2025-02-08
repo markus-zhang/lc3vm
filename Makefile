@@ -48,6 +48,9 @@ $(TARGET): $(OBJ_FILES) $(IMGUI_OBJ_FILES) $(SRC_DIR)/lc3vmimgui.cpp
 run: $(TARGET)
 	./$(TARGET)
 
+.PHONY: build
+run: $(TARGET)
+
 # Clean build files
 .PHONY: clean
 clean:

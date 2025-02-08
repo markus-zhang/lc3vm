@@ -33,11 +33,11 @@ void cache_dump(int cacheIndex);
 uint16_t read_memory(uint16_t index);
 uint16_t read_uint16_t(uint16_t index);
 void write_memory(uint16_t index, uint16_t value);
-void disable_input_buffering();
-void restore_input_buffering();
-void setup();
-void handle_interrupt(int signal);
-uint16_t check_key();
+// void disable_input_buffering();
+// void restore_input_buffering();
+// void setup();
+// void handle_interrupt(int signal);
+// uint16_t check_key();
 
 // lc-3 instruction functions
 void op_br(uint16_t instr);
@@ -253,7 +253,7 @@ void input()
                         memoryWindow.editorMode = false;
                     }
                 }
-                else if (sdlEvent.key.keysym.sym == SDLK_d)
+                else if (sdlEvent.key.keysym.sym == SDLK_1)
                 {
                     // We don't want the whole debug window closed when user types 'd', do we?
                     if (!memoryWindow.editorMode)
@@ -261,7 +261,7 @@ void input()
                         isDebug = !isDebug;
                     }
                 }
-                else if (sdlEvent.key.keysym.sym == SDLK_g)
+                else if (sdlEvent.key.keysym.sym == SDLK_2)
                 {
                     // TODO: This is probably not a great way to disable certain keys
                     // Just imagine what happens if we have a dozen of such switches
@@ -791,41 +791,36 @@ void op_trap(uint16_t instr)
 }
 
 // misc. functions
-void setup()
-{
-	signal(SIGINT, handle_interrupt);
-	signal(SIGTERM, handle_interrupt);
-	signal(SIGSEGV, handle_interrupt);
-	signal(SIGKILL, handle_interrupt);
-	disable_input_buffering();
-}
-
+// void setup()
+// {
+// 	signal(SIGINT, handle_interrupt);
+// 	signal(SIGTERM, handle_interrupt);
+// 	signal(SIGSEGV, handle_interrupt);
+// 	signal(SIGKILL, handle_interrupt);
+// 	disable_input_buffering();
+// }
 // void shutdown()
 // {
 // 	restore_input_buffering();
 // 	cache_clear();
 // }
-
-void handle_interrupt(int signal)
-{
-	restore_input_buffering();
-	printf("\n");
-	exit(-2);
-}
-
-void disable_input_buffering()
-{
-    tcgetattr(STDIN_FILENO, &original_tio);
-    struct termios new_tio = original_tio;
-    new_tio.c_lflag &= ~ICANON & ~ECHO;
-    tcsetattr(STDIN_FILENO, TCSANOW, &new_tio);
-	
-}
-
-void restore_input_buffering()
-{
-    tcsetattr(STDIN_FILENO, TCSANOW, &original_tio);
-}
+// void handle_interrupt(int signal)
+// {
+// 	restore_input_buffering();
+// 	printf("\n");
+// 	exit(-2);
+// }
+// void disable_input_buffering()
+// {
+//     tcgetattr(STDIN_FILENO, &original_tio);
+//     struct termios new_tio = original_tio;
+//     new_tio.c_lflag &= ~ICANON & ~ECHO;
+//     tcsetattr(STDIN_FILENO, TCSANOW, &new_tio);	
+// }
+// void restore_input_buffering()
+// {
+//     tcsetattr(STDIN_FILENO, TCSANOW, &original_tio);
+// }
 
 void update_flag(uint16_t value)
 {
@@ -869,23 +864,24 @@ uint16_t read_memory(uint16_t index)
     else if (index == MR_KBDR)
     {
         keyPressed = false;     // We are consuming the key
+        printf("Key: %d", lastKeyPressed);
         return lastKeyPressed;
     }
 	return memory[index];
     // return read_uint16_t(index);
 }
 
-uint16_t check_key()
-{
-    fd_set readfds;
-    FD_ZERO(&readfds);
-    FD_SET(STDIN_FILENO, &readfds);
+// uint16_t check_key()
+// {
+//     fd_set readfds;
+//     FD_ZERO(&readfds);
+//     FD_SET(STDIN_FILENO, &readfds);
 
-    struct timeval timeout;
-    timeout.tv_sec = 0;
-    timeout.tv_usec = 0;
-    return select(1, &readfds, NULL, NULL, &timeout) != 0;
-}
+//     struct timeval timeout;
+//     timeout.tv_sec = 0;
+//     timeout.tv_usec = 0;
+//     return select(1, &readfds, NULL, NULL, &timeout) != 0;
+// }
 
 uint16_t read_uint16_t(uint16_t index)
 {
@@ -904,11 +900,13 @@ void trap_0x20()
 {
 	// Read a single character from the keyboard. The character is not echoed onto the console.
 	// Its ASCII code is copied into R0. The high eight bits of R0 are cleared
-	reg[R_R0] = (uint16_t)getchar();
-	reg[R_R0] &= 0x00FF;
-	update_flag(reg[R_R0]);
-	// ui_debug_info(reg, 25);
-	fflush(stdout);
+	// reg[R_R0] = (uint16_t)getchar();
+	// reg[R_R0] &= 0x00FF;
+	// update_flag(reg[R_R0]);
+	// // ui_debug_info(reg, 25);
+	// fflush(stdout);
+    reg[R_R0] = lastKeyPressed & 0x00FF;
+    update_flag(reg[R_R0]);
 }
 
 void trap_0x21()
