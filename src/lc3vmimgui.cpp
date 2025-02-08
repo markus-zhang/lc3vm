@@ -184,7 +184,7 @@ int init()
         SDL_WINDOW_SHOWN
     );
 
-    renderer = SDL_CreateRenderer(window, -1, 0);
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
     // Initialize the ImGui context
     ImGui::CreateContext();
@@ -210,20 +210,23 @@ int init()
 
 void input()
 {
+    // SDL_PumpEvents();
+    // SDL_FlushEvent(SDL_KEYDOWN);
+    // SDL_FlushEvent(SDL_TEXTINPUT);
     // Process Input
     SDL_Event sdlEvent;
     while (SDL_PollEvent(&sdlEvent))
     {
         // Handle ImGui SDL input
         ImGui_ImplSDL2_ProcessEvent(&sdlEvent);
-        ImGuiIO& io = ImGui::GetIO();
+        // ImGuiIO& io = ImGui::GetIO();
 
-        int mouseX, mouseY;
+        // int mouseX, mouseY;
 
-        const Uint32 buttons = SDL_GetMouseState(&mouseX, &mouseY);
-        io.MousePos = ImVec2(mouseX, mouseY);
-        io.MouseDown[0] = buttons & SDL_BUTTON(SDL_BUTTON_LEFT);
-        io.MouseDown[1] = buttons & SDL_BUTTON(SDL_BUTTON_RIGHT);
+        // const Uint32 buttons = SDL_GetMouseState(&mouseX, &mouseY);
+        // io.MousePos = ImVec2(mouseX, mouseY);
+        // io.MouseDown[0] = buttons & SDL_BUTTON(SDL_BUTTON_LEFT);
+        // io.MouseDown[1] = buttons & SDL_BUTTON(SDL_BUTTON_RIGHT);
 
         // Handle core SDL events
         switch (sdlEvent.type)
@@ -233,10 +236,16 @@ void input()
                 signalQuit = false;
                 break;
             }
+            case SDL_KEYUP:
+            {
+                keyPressed = false;
+                break;
+            }
             case SDL_KEYDOWN:
             {
                 keyPressed = true;
-                lastKeyPressed = sdlEvent.key.keysym.sym & 0xFF;
+                lastKeyPressed = sdlEvent.key.keysym.sym & 0x00FF;
+                printf("Key pressed\n");
 
                 if (sdlEvent.key.keysym.sym == SDLK_ESCAPE)
                 {
@@ -277,7 +286,7 @@ void input()
 
 void sdl_imgui_frame()
 {
-        
+    // Uint32 startTime = SDL_GetTicks();    
     /* ----------------------- RENDERING PART -------------------------- */
 
     SDL_SetRenderDrawColor(renderer, 21, 21, 21, 255);
@@ -288,6 +297,8 @@ void sdl_imgui_frame()
         One important part is that all ImGui windows need to be within the same NewFrame(),
         otherwise weird shits happen - e.g. mouse doesn't work on any of the windows somehow
     */
+
+    
     ImGui_ImplSDLRenderer2_NewFrame();
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
@@ -308,9 +319,31 @@ void sdl_imgui_frame()
 
     ImGui::Render();
     ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), renderer);
+    
     // ImGui part END ----------------------------------------------------
 
-    SDL_RenderPresent(renderer);
+    // Draw 50 random rectangles
+    // for (int i = 0; i < 5; i++)
+    // {
+    //     SDL_Rect rect;
+    //     rect.x = rand() % 1920;  // Random X position
+    //     rect.y = rand() % 1080;  // Random Y position
+    //     rect.w = rand() % 200 + 20; // Random width (20-220)
+    //     rect.h = rand() % 200 + 20; // Random height (20-220)
+
+    //     SDL_SetRenderDrawColor(renderer, rand() % 256, rand() % 256, rand() % 256, 255); // Random color
+    //     SDL_RenderFillRect(renderer, &rect);
+    // }
+
+    static int frameCounter = 0;
+    frameCounter++;
+    if (frameCounter % 5 == 0)  // Only render every 5 frames
+    {
+        SDL_RenderPresent(renderer);
+    }
+
+    // Uint32 endTime = SDL_GetTicks();
+    // printf("[DEBUG] Frame Time: %d ms\n", endTime - startTime);
 }
 
 void run()
@@ -429,6 +462,7 @@ void interpreter_run()
 	while (isRunning)
 	{
         input();
+        // sdl_imgui_frame();
 
 		uint16_t lc3Address = reg[R_PC];
 		int cacheIndex = cache_find(lc3Address);
@@ -449,16 +483,22 @@ void interpreter_run()
                 
                 // sdl_imgui_frame();
 			}
-
+            // printf("%d\n", counter++);
 			cache_run(codeCache[newCacheIndex]);
 		}
 		// if found, then execute
 		else
 		{
+            // printf("%d\n", counter++);
 			cache_run(codeCache[cacheIndex]);
             
             // sdl_imgui_frame();
 		}
+
+        // SDL_FlushEvent(SDL_KEYDOWN);
+        // SDL_FlushEvent(SDL_TEXTINPUT);
+
+        // sdl_imgui_frame();
 	}
 }
 
@@ -478,7 +518,7 @@ void cache_run(struct lc3Cache cache)
 		// ui_debug_info(reg, 25);
 		// Debugging END
 
-		reg[R_PC] += 1;	
+ 		reg[R_PC] += 1;	
 		
         instr_call_table[op](instr);
 
@@ -847,41 +887,23 @@ uint16_t read_memory(uint16_t index)
 	if (index == MR_KBSR)
     {
         if (keyPressed)
-        // if (check_key())
         {
-            // memory[MR_KBSR] = (1 << 15);
             write_memory(MR_KBSR, 1 << 15);
-            // memory[MR_KBDR] = getchar();
+            memory[MR_KBDR] = lastKeyPressed;
+            /* 
+                WHY ?
+                If I don't disable it here, the input is insanely lagged
+            */
+            keyPressed = false;
         }
         else
         {
-            // memory[MR_KBSR] = 0;
-            write_memory(MR_KBSR, 0 << 15);
+            write_memory(MR_KBSR, 0);
         }
         return memory[MR_KBSR];
-        // return read_uint16_t(MR_KBSR);
-    }
-    else if (index == MR_KBDR)
-    {
-        keyPressed = false;     // We are consuming the key
-        printf("Key: %d", lastKeyPressed);
-        return lastKeyPressed;
     }
 	return memory[index];
-    // return read_uint16_t(index);
 }
-
-// uint16_t check_key()
-// {
-//     fd_set readfds;
-//     FD_ZERO(&readfds);
-//     FD_SET(STDIN_FILENO, &readfds);
-
-//     struct timeval timeout;
-//     timeout.tv_sec = 0;
-//     timeout.tv_usec = 0;
-//     return select(1, &readfds, NULL, NULL, &timeout) != 0;
-// }
 
 uint16_t read_uint16_t(uint16_t index)
 {
@@ -890,8 +912,6 @@ uint16_t read_uint16_t(uint16_t index)
 
 void write_memory(uint16_t index, uint16_t value)
 {
-	// memory[index + 1] = (uint8_t)(value >> 8);
-    // memory[index] = (uint8_t)(value & 0x00FF);
     memory[index] = value;
 }
 
@@ -900,13 +920,7 @@ void trap_0x20()
 {
 	// Read a single character from the keyboard. The character is not echoed onto the console.
 	// Its ASCII code is copied into R0. The high eight bits of R0 are cleared
-	// reg[R_R0] = (uint16_t)getchar();
-	// reg[R_R0] &= 0x00FF;
-	// update_flag(reg[R_R0]);
-	// // ui_debug_info(reg, 25);
-	// fflush(stdout);
     reg[R_R0] = lastKeyPressed & 0x00FF;
-    update_flag(reg[R_R0]);
 }
 
 void trap_0x21()
@@ -993,5 +1007,5 @@ void trap_0x25()
 {
 	// Halt execution and print a message on the console.
 	printf("\nSystem HALT\n");
-	running = 0;
+	isRunning = false;
 }
