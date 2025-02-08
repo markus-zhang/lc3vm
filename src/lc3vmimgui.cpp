@@ -9,7 +9,6 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <imgui.h>
-// #include <imgui/imgui_sdl.h>
 #include <imgui_impl_sdl2.h>
 #include <imgui_impl_sdlrenderer2.h>
 #include <signal.h>
@@ -33,11 +32,6 @@ void cache_dump(int cacheIndex);
 uint16_t read_memory(uint16_t index);
 uint16_t read_uint16_t(uint16_t index);
 void write_memory(uint16_t index, uint16_t value);
-// void disable_input_buffering();
-// void restore_input_buffering();
-// void setup();
-// void handle_interrupt(int signal);
-// uint16_t check_key();
 
 // lc-3 instruction functions
 void op_br(uint16_t instr);
@@ -99,7 +93,6 @@ enum
 
 uint16_t buffer[MAX_SIZE] = {0};
 uint8_t running = 1;
-// struct termios original_tio;
 
 void (*instr_call_table[])(uint16_t) = {
 	&op_br, &op_add, &op_ld, &op_st, &op_jsr, &op_and, &op_ldr, &op_str, 
@@ -134,12 +127,7 @@ int main()
         return init_code;
     }
 
-    // setup();
-
     interpreter_run();
-
-    // restore_input_buffering();
-	// cache_clear();
 
     shutdown();
 }
@@ -177,8 +165,6 @@ int init()
         "ImGui Test",
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
-        // displayMode.w,
-        // displayMode.h,
         1920,
         1080,
         SDL_WINDOW_SHOWN
@@ -188,7 +174,6 @@ int init()
 
     // Initialize the ImGui context
     ImGui::CreateContext();
-    // ImGuiSDL::Initialize(renderer, 1440, 900);
     ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
     ImGui_ImplSDLRenderer2_Init(renderer);
 
@@ -210,9 +195,6 @@ int init()
 
 void input()
 {
-    // SDL_PumpEvents();
-    // SDL_FlushEvent(SDL_KEYDOWN);
-    // SDL_FlushEvent(SDL_TEXTINPUT);
     // Process Input
     SDL_Event sdlEvent;
     while (SDL_PollEvent(&sdlEvent))
@@ -286,6 +268,11 @@ void input()
 
 void sdl_imgui_frame()
 {
+    // HACK: Check if any UI needs rendering 
+    if (!isDebug && !isDisa && !signalQuit)
+    {
+        return;
+    }
     // Uint32 startTime = SDL_GetTicks();    
     /* ----------------------- RENDERING PART -------------------------- */
 
@@ -297,7 +284,6 @@ void sdl_imgui_frame()
         One important part is that all ImGui windows need to be within the same NewFrame(),
         otherwise weird shits happen - e.g. mouse doesn't work on any of the windows somehow
     */
-
     
     ImGui_ImplSDLRenderer2_NewFrame();
     ImGui_ImplSDL2_NewFrame();
@@ -322,25 +308,7 @@ void sdl_imgui_frame()
     
     // ImGui part END ----------------------------------------------------
 
-    // Draw 50 random rectangles
-    // for (int i = 0; i < 5; i++)
-    // {
-    //     SDL_Rect rect;
-    //     rect.x = rand() % 1920;  // Random X position
-    //     rect.y = rand() % 1080;  // Random Y position
-    //     rect.w = rand() % 200 + 20; // Random width (20-220)
-    //     rect.h = rand() % 200 + 20; // Random height (20-220)
-
-    //     SDL_SetRenderDrawColor(renderer, rand() % 256, rand() % 256, rand() % 256, 255); // Random color
-    //     SDL_RenderFillRect(renderer, &rect);
-    // }
-
-    static int frameCounter = 0;
-    frameCounter++;
-    if (frameCounter % 5 == 0)  // Only render every 5 frames
-    {
-        SDL_RenderPresent(renderer);
-    }
+    SDL_RenderPresent(renderer);
 
     // Uint32 endTime = SDL_GetTicks();
     // printf("[DEBUG] Frame Time: %d ms\n", endTime - startTime);
@@ -448,7 +416,6 @@ void run()
 
 void shutdown()
 {
-    // ImGuiSDL::Deinitialize();
     ImGui_ImplSDLRenderer2_Shutdown();
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
@@ -459,10 +426,12 @@ void shutdown()
 
 void interpreter_run()
 {
+    static int frameCounter = 0;
 	while (isRunning)
 	{
         input();
-        // sdl_imgui_frame();
+
+        sdl_imgui_frame();
 
 		uint16_t lc3Address = reg[R_PC];
 		int cacheIndex = cache_find(lc3Address);
@@ -476,29 +445,15 @@ void interpreter_run()
 
 			if (DEBUG_MODE == DEBUG_DIS)
 			{
-				// FILE* dump = fopen("cache_dump.txt", "a");
-				cache_dump(newCacheIndex);
-                // It is required to run sdl_imgui_frame() just for visually check the code
-                // The code is loaded into the disa window but we must draw it on screen
-                
-                // sdl_imgui_frame();
+				cache_dump(newCacheIndex); 
 			}
-            // printf("%d\n", counter++);
 			cache_run(codeCache[newCacheIndex]);
 		}
 		// if found, then execute
 		else
 		{
-            // printf("%d\n", counter++);
 			cache_run(codeCache[cacheIndex]);
-            
-            // sdl_imgui_frame();
 		}
-
-        // SDL_FlushEvent(SDL_KEYDOWN);
-        // SDL_FlushEvent(SDL_TEXTINPUT);
-
-        // sdl_imgui_frame();
 	}
 }
 
@@ -521,15 +476,12 @@ void cache_run(struct lc3Cache cache)
  		reg[R_PC] += 1;	
 		
         instr_call_table[op](instr);
-
-        // sdl_imgui_frame();
 	}
 
 }
 
 void cache_dump(int cacheIndex)
 {
-
 	printf("--------Dumping Cache No. %d BEGIN--------\n", cacheIndex);
 	if (cacheIndex >= cacheCount)
 	{
@@ -537,19 +489,9 @@ void cache_dump(int cacheIndex)
 	}
 	else
 	{
-		// for (int i = 0; i < codeCache[cacheIndex].numInstr; i++)
-		// {
-		// 	uint16_t instr = codeCache[cacheIndex].codeBlock[i];	
-		// 	uint16_t op = instr >> 12;
-		// 	/* Call the dispatch fp */
-		// 	disa_call_table[op](instr, 0x3000 + i * 2);
-		// }
         disaWindow.Load(codeCache[cacheIndex].codeBlock, codeCache[cacheIndex].numInstr, codeCache[cacheIndex].lc3MemAddress);
 	}
 	printf("--------Dumping Cache No. %d END----------\n", cacheIndex);
-	// Pause for inspection
-	// fflush(stdout);
-	// getchar();
 }
 
 /* Op code functions */
@@ -702,16 +644,6 @@ void op_rti(uint16_t instr)
 		1  0  0  0  | 0  0  0 0 0 0 0 0 0 0 0 0
 	*/
 	// Technically need to work under privilege mode
-	
-	/*
-		PC = mem[R6]; R6 is the SSP, PC is restored
-		R6 = R6+1;
-		TEMP = mem[R6];
-		R6 = R6+1; system stack completes POP before saved PSR is restored
-		PSR = TEMP; PSR is restored
-		if (PSR[15] == 1)
-		Saved SSP=R6 and R6=Saved USP;
-	*/
 	printf("Not supposed to be here!\n");
 }
 
@@ -829,38 +761,6 @@ void op_trap(uint16_t instr)
 			printf("Erroneous TRAP vector!\n");
 	}
 }
-
-// misc. functions
-// void setup()
-// {
-// 	signal(SIGINT, handle_interrupt);
-// 	signal(SIGTERM, handle_interrupt);
-// 	signal(SIGSEGV, handle_interrupt);
-// 	signal(SIGKILL, handle_interrupt);
-// 	disable_input_buffering();
-// }
-// void shutdown()
-// {
-// 	restore_input_buffering();
-// 	cache_clear();
-// }
-// void handle_interrupt(int signal)
-// {
-// 	restore_input_buffering();
-// 	printf("\n");
-// 	exit(-2);
-// }
-// void disable_input_buffering()
-// {
-//     tcgetattr(STDIN_FILENO, &original_tio);
-//     struct termios new_tio = original_tio;
-//     new_tio.c_lflag &= ~ICANON & ~ECHO;
-//     tcsetattr(STDIN_FILENO, TCSANOW, &new_tio);	
-// }
-// void restore_input_buffering()
-// {
-//     tcsetattr(STDIN_FILENO, TCSANOW, &original_tio);
-// }
 
 void update_flag(uint16_t value)
 {
