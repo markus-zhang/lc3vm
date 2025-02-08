@@ -27,7 +27,7 @@ public:
 
     /* We need a default constructor to write LC3VMMemorywindow window; */
     LC3VMMemorywindow();
-    LC3VMMemorywindow(unsigned char* memory, size_t memorySize, const WindowConfig& config);
+    LC3VMMemorywindow(uint16_t* memory, size_t memorySize, const WindowConfig& config);
     ~LC3VMMemorywindow() = default;
 
     void Draw();

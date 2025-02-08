@@ -12,6 +12,8 @@
 // #include <imgui/imgui_sdl.h>
 #include <imgui_impl_sdl2.h>
 #include <imgui_impl_sdlrenderer2.h>
+#include <signal.h>
+#include <termios.h>
 
 /* ------- function declarations begin -------- */
 // Initialization
@@ -27,6 +29,15 @@ void run();
 void shutdown();
 void cache_run(struct lc3Cache cache);
 void cache_dump(int cacheIndex);
+
+uint16_t read_memory(uint16_t index);
+uint16_t read_uint16_t(uint16_t index);
+void write_memory(uint16_t index, uint16_t value);
+void disable_input_buffering();
+void restore_input_buffering();
+void setup();
+void handle_interrupt(int signal);
+uint16_t check_key();
 
 // lc-3 instruction functions
 void op_br(uint16_t instr);
@@ -46,6 +57,8 @@ void op_res(uint16_t instr);
 void op_lea(uint16_t instr);
 void op_trap(uint16_t instr);
 
+void update_flag(uint16_t value);
+
 // trap functions
 void trap_0x20();
 void trap_0x21();
@@ -57,7 +70,7 @@ void trap_0x25();
 /* ------- function declarations end --------*/
 
 /* Global variables BEGIN -------------------------------------*/
-uint8_t DEBUG_MODE = DEBUG_DIS;
+uint8_t DEBUG_MODE = DEBUG_OFF;
 
 // LC-3 specific BEGIN ------------------------------------------
 enum
@@ -98,11 +111,14 @@ SDL_Window* window = nullptr;
 SDL_Renderer* renderer = nullptr;
 LC3VMMemorywindow memoryWindow;
 LC3VMdisawindow disaWindow;
+bool keyPressed;
+uint8_t lastKeyPressed;
+struct termios original_tio;
 
 // Registers
 uint16_t reg[R_COUNT];
 // RAM
-uint8_t memory[(MAX_SIZE) * 2] = {0};
+uint16_t memory[MAX_SIZE] = {0};
 
 bool signalQuit;
 bool isRunning;
@@ -118,7 +134,12 @@ int main()
         return init_code;
     }
 
+    // setup();
+
     interpreter_run();
+
+    // restore_input_buffering();
+	// cache_clear();
 
     shutdown();
 }
@@ -127,6 +148,9 @@ int main()
 
 int init()
 {
+    keyPressed = false;
+    lastKeyPressed = 0;
+
     reg[R_COND] = FL_ZRO;
 	reg[R_PC] = 0x3000;
 
@@ -211,8 +235,12 @@ void input()
             }
             case SDL_KEYDOWN:
             {
+                keyPressed = true;
+                lastKeyPressed = sdlEvent.key.keysym.sym & 0xFF;
+
                 if (sdlEvent.key.keysym.sym == SDLK_ESCAPE)
                 {
+                    keyPressed = true;
                     // When editing, esc is used to close the editor mini window
                     // as editorMode is the controlling boolean
                     if (!memoryWindow.editorMode)
@@ -418,16 +446,18 @@ void interpreter_run()
 				cache_dump(newCacheIndex);
                 // It is required to run sdl_imgui_frame() just for visually check the code
                 // The code is loaded into the disa window but we must draw it on screen
-                sdl_imgui_frame();
+                
+                // sdl_imgui_frame();
 			}
 
-			// cache_run(codeCache[newCacheIndex]);
+			cache_run(codeCache[newCacheIndex]);
 		}
 		// if found, then execute
 		else
 		{
-			// cache_run(codeCache[cacheIndex]);
-            sdl_imgui_frame();
+			cache_run(codeCache[cacheIndex]);
+            
+            // sdl_imgui_frame();
 		}
 	}
 }
@@ -448,13 +478,11 @@ void cache_run(struct lc3Cache cache)
 		// ui_debug_info(reg, 25);
 		// Debugging END
 
-		/* LC-3 PC++ */
 		reg[R_PC] += 1;	
 		
-        // TODO: turn this on whence the op functions are implemented
-        // instr_call_table[op](instr);
+        instr_call_table[op](instr);
 
-        sdl_imgui_frame();
+        // sdl_imgui_frame();
 	}
 
 }
@@ -488,80 +516,484 @@ void cache_dump(int cacheIndex)
 
 void op_br(uint16_t instr)
 {
-
+	/* 
+		15 14 13 12 | 11 10 9 | 8 7 6 5 4 3 2 1 0
+		0  0  0  0  | n  z  p |    PCOffset9
+	*/
+	uint16_t pcoffset9 = sign_extended(instr & 0x01FF, 9);
+	// If at least one of the nzp bits and the matching bits in R_COND are both 1, then jump
+	if (reg[R_COND] & ((instr >> 9) & 0x0007))
+	{
+		reg[R_PC] += pcoffset9;
+	}
 }
 
 void op_add(uint16_t instr)
 {
+	/* 
+		15 14 13 12 | 11 10 9 | 8 7 6 | 5 | 4 3 | 2 1 0
+		0  0  0  1  |   DR    |  SR1  | 0 | 0 0 |  SR2 
+		----------------------or-----------------------
+		15 14 13 12 | 11 10 9 | 8 7 6 | 5 | 4 3 2 1 0
+		0  0  0  1  |   DR    |  SR   | 1 |    IMM
+	*/
 
+	uint8_t dr = (instr >> 9) & 0x0007;
+	uint8_t sr = (instr >> 6) & 0x0007;
+	uint8_t mode = (instr >> 5) & 0x0001;
+	if (mode)
+	{
+		uint16_t imm = sign_extended(instr & 0x001F, 5);
+		reg[dr] = reg[sr] + imm;
+	}
+	else 
+	{
+		uint8_t sr2 = instr & 0x0007;
+		reg[dr] = reg[sr] + reg[sr2];
+	}
+	update_flag(reg[dr]);
 }
 
 void op_ld(uint16_t instr)
 {
-
+	/* 
+		15 14 13 12 | 11 10 9 | 8 7 6 5 4 3 2 1 0
+		0  0  1  0  |   DR    |    PCOffset9
+	*/
+	uint16_t pcoffset9 = sign_extended(instr & 0x01FF, 9);
+	uint8_t dr = (instr >> 9) & 0x0007;
+	// Ignore privilege bit and other security measures
+	reg[dr] = read_memory(reg[R_PC] + pcoffset9);
+	update_flag(reg[dr]);
 }
 
 void op_st(uint16_t instr)
 {
-
+	/* 
+		15 14 13 12 | 11 10 9 | 8 7 6 5 4 3 2 1 0
+		0  0  1  1  |   SR    |    PCOffset9
+	*/
+	uint16_t pcoffset9 = sign_extended(instr & 0x01FF, 9);
+	uint8_t sr = (instr >> 9) & 0x0007;
+	write_memory(reg[R_PC] + pcoffset9, reg[sr]);
 }
 
 void op_jsr(uint16_t instr)
 {
-
+	/* 
+		15 14 13 12 | 11 | 10 9 8 7 6 5 4 3 2 1 0
+		0  1  0  0  | 1  |      PCOffset11
+		-----------------or----------------------
+		15 14 13 12 | 11 | 10 9 | 8 7 6 | 5 4 3 2 1 0
+		0  1  0  0  | 0  | 0  0 |   BR  | 0 0 0 0 0 0
+	*/
+	reg[R_R7] = reg[R_PC];
+	uint8_t mode = (instr >> 11) & 0x0001;
+	if (mode)
+	{
+		uint16_t pcoffset11 = sign_extended(instr & 0x07FF, 11);
+		reg[R_PC] += pcoffset11;
+	}
+	else
+	{
+		uint8_t br = (instr >> 6) & 0x0007;
+		reg[R_PC] = reg[br];
+	}
 }
 
 void op_and(uint16_t instr)
 {
-
+	/* 
+		15 14 13 12 | 11 10 9 | 8 7 6 | 5 | 4 3 | 2 1 0
+		0  1  0  1  |    DR   |  SR1  | 0 | 0 0 |  SR2
+		---------------------or------------------------
+		15 14 13 12 | 11 10 9 | 8 7 6 | 5 | 4 3 2 1 0
+		0  1  0  1  |    DR   |  SR1  | 1 |   imm5
+	*/
+	uint8_t mode = (instr >> 5) & 0x0001;
+	uint8_t dr = (instr >> 9) & 0x0007;
+	uint8_t sr = (instr >> 6) & 0x0007;
+	if (mode)
+	{
+		uint16_t imm5 = sign_extended(instr & 0x001F, 5);
+		reg[dr] = reg[sr] & imm5;
+	}
+	else
+	{
+		uint8_t sr2 = instr & 0x0007;
+		reg[dr] = reg[sr] & reg[sr2];
+	}
+	update_flag(reg[dr]);
 }
 
 void op_ldr(uint16_t instr)
 {
+	/* 
+		15 14 13 12 | 11 10 9 | 8 7 6 | 5 4 3 2 1 0
+		0  1  1  0  |   DR    | BaseR |   offset6
+	*/
+	// Again ignore the security measures
+	uint8_t dr = (instr >> 9) & 0x0007;
+	uint8_t br = (instr >> 6) & 0x0007;
+	uint16_t offset6 = sign_extended(instr & 0x003F, 6);
 
+	reg[dr] = read_memory(reg[br] + offset6);
+	update_flag(reg[dr]);
 }
 
 void op_str(uint16_t instr)
 {
+	/* 
+		15 14 13 12 | 11 10 9 | 8 7 6 | 5 4 3 2 1 0
+		0  1  1  1  |   SR    | BaseR |   offset6
+	*/
+	// Again ignore the security measures
+	uint8_t sr = (instr >> 9) & 0x0007;
+	uint8_t br = (instr >> 6) & 0x0007;
+	uint16_t offset6 = sign_extended(instr & 0x003F, 6);
 
+	write_memory(reg[br] + offset6, reg[sr]);
 }
 
 void op_rti(uint16_t instr)
 {
-
+	/* 
+		15 14 13 12 | 11 10 9 8 7 6 5 4 3 2 1 0
+		1  0  0  0  | 0  0  0 0 0 0 0 0 0 0 0 0
+	*/
+	// Technically need to work under privilege mode
+	
+	/*
+		PC = mem[R6]; R6 is the SSP, PC is restored
+		R6 = R6+1;
+		TEMP = mem[R6];
+		R6 = R6+1; system stack completes POP before saved PSR is restored
+		PSR = TEMP; PSR is restored
+		if (PSR[15] == 1)
+		Saved SSP=R6 and R6=Saved USP;
+	*/
+	printf("Not supposed to be here!\n");
 }
 
 void op_not(uint16_t instr)
 {
+	/* 
+		15 14 13 12 | 11 10 9 | 8 7 6 | 5 | 4 3 2 1 0
+		1  0  0  1  |   DR    |   SR  | 1 | 1 1 1 1 1
+	*/
+	uint8_t dr = (instr >> 9) & 0x0007;
+	uint8_t sr = (instr >> 6) & 0x0007;
 
+	reg[dr] = (~reg[sr]);
+	update_flag(reg[dr]);
 }
 
 void op_ldi(uint16_t instr)
 {
+	/* 
+		15 14 13 12 | 11 10 9 | 8 7 6 5 4 3 2 1 0
+		1  0  1  0  |   DR    |    PCoffset9
+	*/
+	// Again we ignore the security measures
+	uint16_t pcoffset9 = sign_extended(instr & 0x01FF, 9);
+	uint8_t dr = (instr >> 9) & 0x0007;
 
+	reg[dr] = read_memory(read_memory(reg[R_PC] + pcoffset9));
+	update_flag(reg[dr]);
 }
 
 void op_sti(uint16_t instr)
 {
+	/* 
+		15 14 13 12 | 11 10 9 | 8 7 6 5 4 3 2 1 0
+		1  0  1  1  |   SR    |     PCoffset9
+	*/
+	// Again ignore the security measures
+	uint8_t sr = (instr >> 9) & 0x0007;
+	uint16_t pcoffset9 = sign_extended(instr & 0x01FF, 9);
 
+	write_memory(read_memory(reg[R_PC] + pcoffset9), reg[sr]);
 }
 
 void op_jmp(uint16_t instr)
 {
-
+	/*  JMP
+		15 14 13 12 | 11 10 9 | 8 7 6 | 5 4 3 2 1 0
+		1  1  0  0  | 0  0  0 | BaseR | 0 0 0 0 0 0
+		-------------------or----------------------
+		RET
+		15 14 13 12 | 11 10 9 | 8 7 6 | 5 4 3 2 1 0
+		1  1  0  0  | 0  0  0 | 1 1 1 | 0 0 0 0 0 0
+	*/
+	uint8_t br = (instr >> 6) & 0x0007;
+	// return address stored in R7 so a "jmp" to it equals RET
+	reg[R_PC] = reg[br];
 }
 
 void op_res(uint16_t instr)
 {
-
+	/*  RET
+		15 14 13 12 | 11 10 9 | 8 7 6 | 5 4 3 2 1 0
+		1  1  0  0  | 0  0  0 | 1 1 1 | 0 0 0 0 0 0
+	*/
+	// reg[R_PC] = reg[R_R7];
+	printf("Not supposed to be here\n");
 }
 
 void op_lea(uint16_t instr)
 {
+	/*
+		15 14 13 12 | 11 10 9 | 8 7 6 5 4 3 2 1 0
+		1  1  1  0  |    dr   |     PCoffset9
+	*/
+	uint16_t pcoffset9 = sign_extended(instr & 0x01FF, 9);
+	uint8_t dr = (instr >> 9) & 0x0007;
 
+	reg[dr] = reg[R_PC] + pcoffset9;
+	update_flag(reg[dr]);
 }
 
 void op_trap(uint16_t instr)
 {
+	/*
+		15 14 13 12 | 11 10 9 8 | 7 6 5 4 3 2 1 0
+		1  1  1  1  | 0  0  0 0 |    trapvect8
+	*/
+	reg[R_R7] = reg[R_PC];
 
+	uint8_t trapvect8 = instr & 0x00FF;
+	switch (trapvect8)
+	{
+		case 0x20:
+			// GETC
+			// Read a single character from the keyboard. The character is not echoed onto the console.
+			// Its ASCII code is copied into R0. The high eight bits of R0 are cleared
+			trap_0x20();
+			break;
+		case 0x21:
+			trap_0x21();
+			break;
+		case 0x22:
+			trap_0x22();
+			break;
+		case 0x23:
+			trap_0x23();
+			break;
+		case 0x24:
+			trap_0x24();
+			break;
+		case 0x25:
+			trap_0x25();
+			break;
+		default:
+			printf("Erroneous TRAP vector!\n");
+	}
+}
+
+// misc. functions
+void setup()
+{
+	signal(SIGINT, handle_interrupt);
+	signal(SIGTERM, handle_interrupt);
+	signal(SIGSEGV, handle_interrupt);
+	signal(SIGKILL, handle_interrupt);
+	disable_input_buffering();
+}
+
+// void shutdown()
+// {
+// 	restore_input_buffering();
+// 	cache_clear();
+// }
+
+void handle_interrupt(int signal)
+{
+	restore_input_buffering();
+	printf("\n");
+	exit(-2);
+}
+
+void disable_input_buffering()
+{
+    tcgetattr(STDIN_FILENO, &original_tio);
+    struct termios new_tio = original_tio;
+    new_tio.c_lflag &= ~ICANON & ~ECHO;
+    tcsetattr(STDIN_FILENO, TCSANOW, &new_tio);
+	
+}
+
+void restore_input_buffering()
+{
+    tcsetattr(STDIN_FILENO, TCSANOW, &original_tio);
+}
+
+void update_flag(uint16_t value)
+{
+	// Clear the last three bits (N/Z/P) and set P
+	reg[R_COND] &= 0xFFF8;
+	if (value >> 15)
+	{	
+		// Since value is uint16_t, cannot use if (value < 0), have to check the highest bit
+		reg[R_COND] |= FL_NEG;
+	}
+	else if (value == 0)
+	{
+		reg[R_COND] |= FL_ZRO;
+	}
+	else
+	{
+		reg[R_COND] |= FL_POS;
+	}
+}
+
+uint16_t read_memory(uint16_t index)
+{
+	// Two memory mapped registers
+	if (index == MR_KBSR)
+    {
+        if (keyPressed)
+        // if (check_key())
+        {
+            // memory[MR_KBSR] = (1 << 15);
+            write_memory(MR_KBSR, 1 << 15);
+            // memory[MR_KBDR] = getchar();
+        }
+        else
+        {
+            // memory[MR_KBSR] = 0;
+            write_memory(MR_KBSR, 0 << 15);
+        }
+        return memory[MR_KBSR];
+        // return read_uint16_t(MR_KBSR);
+    }
+    else if (index == MR_KBDR)
+    {
+        keyPressed = false;     // We are consuming the key
+        return lastKeyPressed;
+    }
+	return memory[index];
+    // return read_uint16_t(index);
+}
+
+uint16_t check_key()
+{
+    fd_set readfds;
+    FD_ZERO(&readfds);
+    FD_SET(STDIN_FILENO, &readfds);
+
+    struct timeval timeout;
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 0;
+    return select(1, &readfds, NULL, NULL, &timeout) != 0;
+}
+
+uint16_t read_uint16_t(uint16_t index)
+{
+    return (uint16_t)(memory[index]) | ((uint16_t)(memory[index + 1]) << 8);
+}
+
+void write_memory(uint16_t index, uint16_t value)
+{
+	// memory[index + 1] = (uint8_t)(value >> 8);
+    // memory[index] = (uint8_t)(value & 0x00FF);
+    memory[index] = value;
+}
+
+// trap functions
+void trap_0x20()
+{
+	// Read a single character from the keyboard. The character is not echoed onto the console.
+	// Its ASCII code is copied into R0. The high eight bits of R0 are cleared
+	reg[R_R0] = (uint16_t)getchar();
+	reg[R_R0] &= 0x00FF;
+	update_flag(reg[R_R0]);
+	// ui_debug_info(reg, 25);
+	fflush(stdout);
+}
+
+void trap_0x21()
+{
+	// Write a character in R0[7:0] to the console display.
+	putc((uint8_t)reg[R_R0], stdout);
+	// ui_debug_info(reg, 25);
+	fflush(stdout);
+}
+
+void trap_0x22()
+{
+	// Write a string of ASCII characters to the console display. The characters are
+	// contained in consecutive memory locations, one character per memory location,
+	// starting with the address specified in R0. Writing terminates with the occurrence of
+	// x0000 in a memory location.
+
+	for (uint16_t i = reg[R_R0]; ;i++)
+	{
+		char ch = read_memory(i);
+		if (ch == 0)
+		{
+			break;
+		}
+		else
+		{
+			putc(ch, stdout);
+		}
+	}
+	// ui_debug_info(reg, 25);
+	fflush(stdout);
+}
+
+void trap_0x23()
+{
+	// Print a prompt on the screen and read a single character from the keyboard. 
+	// The character is echoed onto the console monitor, and its ASCII code is copied into R0.
+	// The high eight bits of R0 are cleared.
+	
+	printf("> ");
+	reg[R_R0] = (uint16_t)fgetc(stdin);
+	reg[R_R0] &= 0x00FF;
+	putc((uint8_t)reg[R_R0], stdout);
+	// ui_debug_info(reg, 25);
+	fflush(stdout);
+	update_flag(reg[R_R0]);
+}
+
+void trap_0x24()
+{
+	/*
+		Write a string of ASCII characters to the console. 
+		The characters are contained in consecutive memory locations, 
+		two characters per memory location, starting with the address specified in R0. 
+
+		The ASCII code contained in bits [7:0] of a memory
+		location is written to the console first. 
+		
+		Then the ASCII code contained in bits [15:8] of that memory location is written to the console. 
+		
+		(A character string consisting of
+		an odd number of characters to be written will have x00 in bits [15:8] of the
+		memory location containing the last character to be written.) Writing terminates
+		with the occurrence of x0000 in a memory location.
+	*/
+	for (uint16_t i = reg[R_R0]; ;i++)
+	{
+		uint16_t value = read_memory(i);
+		if (value == 0)
+		{
+			break;
+		}
+		else
+		{
+			putc((uint8_t)(value & 0x00FF), stdout);
+			putc(((uint8_t)(value >> 8)), stdout);
+			// ui_debug_info(reg, 25);
+		}
+	}
+	fflush(stdout);
+}
+
+void trap_0x25()
+{
+	// Halt execution and print a message on the console.
+	printf("\nSystem HALT\n");
+	running = 0;
 }

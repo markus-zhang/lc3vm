@@ -23,19 +23,21 @@ LC3VMMemorywindow::LC3VMMemorywindow()
     quitSignal = false;
 }
 
-LC3VMMemorywindow::LC3VMMemorywindow(unsigned char* memory, size_t memorySize, const WindowConfig& config)
+LC3VMMemorywindow::LC3VMMemorywindow(uint16_t* memory, size_t memorySize, const WindowConfig& config)
 {
     assert(memory != nullptr);
 
     buffer = std::vector<Glyph>(memorySize, {0, 255, 255, 255});
     bufferSize = memorySize;
-    for (size_t i = 0; i < bufferSize ; i++)
+    for (size_t i = 0; i < bufferSize ;)
     {
         // if (*memory == '\0')
         // {
         //     break;
         // }    
-        buffer[i] = {*memory, 255, 255, 255};
+        buffer[i] = {(unsigned char)((*memory) >> 8), 255, 255, 255};
+        buffer[i + 1] = {(unsigned char)((*memory) & 0x00FF), 255, 255, 255};
+        i += 2;
         memory++;
     }
 

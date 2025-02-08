@@ -1,6 +1,6 @@
 #include "lc3vmwin_loader.hpp"
 
-uint16_t load_memory(uint16_t buffer[], uint8_t memory[], FILE* fp)
+uint16_t load_memory(uint16_t buffer[], uint16_t memory[], FILE* fp)
 {
     uint16_t org = 0;
     lc3_loader_header(&org, 1, fp);
@@ -22,8 +22,9 @@ uint16_t load_memory(uint16_t buffer[], uint8_t memory[], FILE* fp)
 	{
         /* memory should load from org (usually 0x3000) */
         uint16_t swapped = swap16(buffer[i]);
-        memory[org + i * 2] = (uint8_t)(swapped >> 8);
-        memory[org + (i * 2) + 1] = (uint8_t)(swapped & 0x00FF);
+        // memory[org + i * 2] = (uint8_t)(swapped >> 8);
+        // memory[org + (i * 2) + 1] = (uint8_t)(swapped & 0x00FF);
+        memory[org + i] = swapped;
 	}
 
     // For host to write into R_PC

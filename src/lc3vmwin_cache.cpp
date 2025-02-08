@@ -9,7 +9,7 @@
 uint16_t cacheCount = 0;
 struct lc3Cache codeCache[CACHE_SIZE_MAX];
 
-struct lc3Cache cache_create_block(uint8_t memory[], uint16_t lc3Address)
+struct lc3Cache cache_create_block(uint16_t memory[], uint16_t lc3Address)
 {
 	uint16_t lc3MemAddress = lc3Address;
 	// uint16_t* codeBlock = (uint16_t*)malloc(sizeof(uint16_t) * CODE_BLOCK_SIZE);
@@ -23,22 +23,23 @@ struct lc3Cache cache_create_block(uint8_t memory[], uint16_t lc3Address)
 
 	while (true)
 	{
-		uint16_t lowByte = (memory[lc3Address]) << 8;
-		uint16_t highByte = memory[(lc3Address + 1)];
-		uint16_t instr = highByte + lowByte;
-		// printf("instr is %#06x\n", instr);
-		// printf("opcode is %#04x\n", instr >> 12);
-		write_16bit(codeBlock, numInstr, instr);
+		// uint16_t lowByte = (memory[lc3Address]) << 8;
+		// uint16_t highByte = memory[(lc3Address + 1)];
+		// uint16_t instr = highByte + lowByte;
+		// // printf("instr is %#06x\n", instr);
+		// // printf("opcode is %#04x\n", instr >> 12);
+		// write_16bit(codeBlock, numInstr, instr);
+		write_16bit(codeBlock, numInstr, memory[lc3Address]);
 		numInstr++;
 		/*
 			find the last lc3Address that is a jump/ret/trap
 		*/
-		if (is_branch(get_opcode(instr)))
+		if (is_branch(get_opcode(memory[lc3Address])))
 		{
 			break;
 		}
 		/* We already read 2 bytes */
-		lc3Address += 2;
+		lc3Address += 1;
 	}
 
 	struct lc3Cache cache = {lc3MemAddress, numInstr, codeBlock};
