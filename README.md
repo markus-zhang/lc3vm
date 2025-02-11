@@ -48,3 +48,17 @@ Sorry I haven't updated the README for a long time, but I have made some progres
 
 + I need to reorganize the code. It needs more love and I feel I use too many switches/flags for different states (e.g. `isKeyPressed`, `isDebug`, `signalQuit`, etc.) -- what if there are more windows? It's going to be a state hell.
 
+= 2025-02-11 =======================================================
+
+New TODOs: To make it a bit more useful, we need to add step-in debugging, otherwise the code disa window is useless.
+
+* However by moving the code to `uint16_t`, all ImGui widgets are broken, I need to fix it as this is the first priority. -> Fixed, very small code change
+
++ I need to reorganize the code. It needs more love and I feel I use too many switches/flags for different states (e.g. `isKeyPressed`, `isDebug`, `signalQuit`, etc.) -- what if there are more windows? It's going to be a state hell. -> Still don't know what to do
+
++ Add code in lc3vmwin_disa.cpp that sends a signal to the main program that a key has been pressed to step execute 
+
++ Add code in lc3vmwin_disa.cpp to add a '>' character before the code to be executed if step in
+
++ Add a new window for registers
+

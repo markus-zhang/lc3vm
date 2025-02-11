@@ -64,7 +64,7 @@ void trap_0x25();
 /* ------- function declarations end --------*/
 
 /* Global variables BEGIN -------------------------------------*/
-uint8_t DEBUG_MODE = DEBUG_OFF;
+uint8_t DEBUG_MODE = DEBUG_DIS;
 
 // LC-3 specific BEGIN ------------------------------------------
 enum
@@ -117,6 +117,8 @@ bool signalQuit;
 bool isRunning;
 bool isDebug;
 bool isDisa;
+bool isStepIn;
+bool StepInSignal;
 
 int main()
 {
@@ -189,6 +191,9 @@ int init()
     isRunning = true;
     isDebug = false;
     isDisa = false;
+    // Test step in "debugging"
+    isStepIn = true;
+    StepInSignal = false;
 
     return 0;
 }
@@ -476,6 +481,16 @@ void cache_run(struct lc3Cache cache)
  		reg[R_PC] += 1;	
 		
         instr_call_table[op](instr);
+
+        // Step-in Debugging
+        if (isStepIn)
+        {
+            // TODO: Must receive a signal from disa window to execute the next instruction
+            while (!StepInSignal)
+            {
+
+            }
+        }
 	}
 
 }
