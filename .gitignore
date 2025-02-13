@@ -1,0 +1,27 @@
+# ignore everything
+*
+
+# add back source/header under ./src
+!/src/
+!/src/*.cpp
+!/src/*.hpp
+!/src/*.asm
+
+# add back other folders
+!/assets/
+!/libs/
+!/libs/**
+!/include/
+!/include/*.hpp
+
+# add back binary
+!*.obj
+
+# add back Makefile
+!Makefile
+
+# add back README
+!README.md
+
+# add back gitignore
+!.gitignore
