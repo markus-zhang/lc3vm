@@ -1,5 +1,6 @@
 #include "lc3vmwin_memory.hpp"
 #include <iomanip>
+#include <math.h> 
 
 
 LC3VMMemorywindow::LC3VMMemorywindow()
@@ -21,6 +22,7 @@ LC3VMMemorywindow::LC3VMMemorywindow()
     memoryEditedIndex = 0x0000;
     memoryEditedIndexLocked = false;
     quitSignal = false;
+    addressInputMode = false;
 }
 
 LC3VMMemorywindow::LC3VMMemorywindow(uint16_t* memory, size_t memorySize, const WindowConfig& config)
@@ -278,6 +280,21 @@ void LC3VMMemorywindow::Draw()
 
     ImGui::PopStyleColor();
 
+    /* 
+        Adding a TextInput to accept user input of initial address
+        - Can only accept hexical numerical values
+        - 4 digits (0040, FFFF) maximum
+    */
+    char userInitalAddress[5] = {0};
+
+    if (ImGui::InputText("Enter Address: 0x", userInitalAddress, IM_ARRAYSIZE(userInitalAddress), ImGuiInputTextFlags_CharsHexadecimal))
+    {
+        addressInputMode = true;
+        // Just for debugging
+        // ImGui::Text("Address: %ld", Char_Array_to_Number(userInitalAddress, 4));
+        ImGui::Text("addressInputMode: %d", addressInputMode);
+    }
+
     /* If we are in Editor Mode, popup the editor window */
 
     if (editorMode)
@@ -392,5 +409,55 @@ void LC3VMMemorywindow::Editor(ImVec2 mousePos, char* c, char original)
         }
         *c = Calculate_Char(newValue, original);
         ImGui::End();
+    }
+}
+
+uint64_t LC3VMMemorywindow::Char_Array_to_Number(char buf[], size_t numDigits)
+{
+    /* Cap the number of hex digits to 16, i.e. 16 bytes */
+    if (numDigits > 16)
+    {
+        numDigits = 16;
+    }
+
+    uint64_t result = 0;
+
+    for (size_t i = numDigits - 1; i >= 0; i--)
+    {
+        if (buf[i] == '\0')
+        {
+            continue;
+        }
+        uint64_t value = Char_to_Number(buf[i]);
+        /* If somehow a bad char (other than 0-9, a-f, A-F) appears, we treat it as a 0 */
+        if (value < 0)
+        {
+            // Complain, must be 0-9, a-f or AF
+            fprintf(stderr, "Error reading hex buffer: char is %c\n", buf[i]);
+            // exit(ERROR_VALUE);
+            value = 0;
+        }
+        result += value * (pow(2, numDigits - 1 - i));
+    }
+    return result;
+}
+
+uint64_t LC3VMMemorywindow::Char_to_Number(char ch)
+{
+    if (ch >= '0' && ch <= '9')
+    {
+        return (uint64_t)(ch - '0');
+    }
+    else if (ch >= 'A' && ch <= 'F')
+    {
+        return (uint64_t)(ch - 'A' + 10);
+    }
+    else if (ch >= 'a' && ch <= 'f')
+    {
+        return (uint64_t)(ch - 'a' + 10);
+    }
+    else 
+    {
+        return -1;
     }
 }

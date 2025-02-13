@@ -14,6 +14,10 @@
 #include <signal.h>
 #include <termios.h>
 
+#include <chrono>
+#include <ctime>
+#include <iomanip>
+
 /* ------- function declarations begin -------- */
 // Initialization
 int init();
@@ -64,7 +68,7 @@ void trap_0x25();
 /* ------- function declarations end --------*/
 
 /* Global variables BEGIN -------------------------------------*/
-uint8_t DEBUG_MODE = DEBUG_DIS;
+uint8_t DEBUG_MODE = DEBUG_OFF;
 
 // LC-3 specific BEGIN ------------------------------------------
 enum
@@ -114,6 +118,7 @@ uint16_t reg[R_COUNT];
 uint16_t memory[MAX_SIZE] = {0};
 
 bool signalQuit;
+bool showQuitConfirm;
 bool isRunning;
 bool isDebug;
 bool isDisa;
@@ -172,7 +177,7 @@ int init()
         SDL_WINDOW_SHOWN
     );
 
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
     // Initialize the ImGui context
     ImGui::CreateContext();
@@ -180,7 +185,7 @@ int init()
     ImGui_ImplSDLRenderer2_Init(renderer);
 
     // Memory Window
-    WindowConfig memoryWinConfig {true, 20, {848, 672}, {848, 672}, {0, 0}};
+    WindowConfig memoryWinConfig {true, 20, {848, 720}, {848, 720}, {0, 0}};
     memoryWindow = LC3VMMemorywindow(memory, (size_t)(MAX_SIZE * 2), memoryWinConfig);
     
     // Insturction Cache Window
@@ -188,6 +193,7 @@ int init()
     disaWindow.Load_Config(disaWinConfig);
 
     signalQuit = false;
+    showQuitConfirm = false;
     isRunning = true;
     isDebug = false;
     isDisa = false;
@@ -206,7 +212,14 @@ void input()
     {
         // Handle ImGui SDL input
         ImGui_ImplSDL2_ProcessEvent(&sdlEvent);
-        // ImGuiIO& io = ImGui::GetIO();
+        ImGuiIO& io = ImGui::GetIO();
+
+        // ImGui has priority if user is interacting with it
+        if (io.WantCaptureKeyboard)
+        {
+            // printf("I wantcontrol of keyboard!\n");
+            continue;
+        }
 
         // int mouseX, mouseY;
 
@@ -252,6 +265,17 @@ void input()
                 else if (sdlEvent.key.keysym.sym == SDLK_1)
                 {
                     // We don't want the whole debug window closed when user types 'd', do we?
+                    // if (!memoryWindow.editorMode && !memoryWindow.addressInputMode)
+                    // {
+                    //     isDebug = !isDebug;
+                    // }
+
+                    /* 
+                        We don't need to check addressInputMode because it was taken care of by io.WantCaptureKeyboard.
+                        However we still need to check editorMode because both the editor window and the memory window are ImGui windows, so io.WantCaptureKeyboard doesn't work.
+
+                        TODO: Actually, after some thoughts, maybe io.WantCaptureKeyboard does work? Imagine we are typing in the editor window, for sure typing 1 won't close the memory window, because it is intercepted by io.WantCaptureKeyboard
+                    */
                     if (!memoryWindow.editorMode)
                     {
                         isDebug = !isDebug;
@@ -261,6 +285,11 @@ void input()
                 {
                     // TODO: This is probably not a great way to disable certain keys
                     // Just imagine what happens if we have a dozen of such switches
+                    // if (!memoryWindow.editorMode && !memoryWindow.addressInputMode)
+                    // {
+                    //     isDisa = !isDisa;
+                    // }
+
                     if (!memoryWindow.editorMode)
                     {
                         isDisa = !isDisa;
@@ -273,11 +302,6 @@ void input()
 
 void sdl_imgui_frame()
 {
-    // HACK: Check if any UI needs rendering 
-    if (!isDebug && !isDisa && !signalQuit)
-    {
-        return;
-    }
     // Uint32 startTime = SDL_GetTicks();    
     /* ----------------------- RENDERING PART -------------------------- */
 
@@ -305,7 +329,7 @@ void sdl_imgui_frame()
 
     if (signalQuit)
     {
-        signalQuit = Quit_Confirm(&isRunning);
+        Quit_Confirm(&isRunning, &signalQuit);
     }
 
     ImGui::Render();
@@ -314,6 +338,13 @@ void sdl_imgui_frame()
     // ImGui part END ----------------------------------------------------
 
     SDL_RenderPresent(renderer);
+
+    // HACK: Check if any UI needs rendering 
+    // TODO: Figure out how to remove the Quit_COnfirm window
+    // if (!isDebug && !isDisa && !signalQuit)
+    // {
+    //     return;
+    // }
 
     // Uint32 endTime = SDL_GetTicks();
     // printf("[DEBUG] Frame Time: %d ms\n", endTime - startTime);
@@ -408,7 +439,7 @@ void run()
 
         if (signalQuit)
         {
-            signalQuit = Quit_Confirm(&isRunning);
+            Quit_Confirm(&isRunning, &signalQuit);
         }
 
         ImGui::Render();
@@ -430,12 +461,24 @@ void shutdown()
 }
 
 void interpreter_run()
-{
-    static int frameCounter = 0;
+{   
+    // static int frameCounter = 0;
 	while (isRunning)
 	{
+        // Uint32 startTime = SDL_GetTicks(); 
+        // Uint32 ticks = SDL_GetTicks(); 
+        // using Clock = std::chrono::system_clock;
+        // auto now      = Clock::now();
+        // auto now_time = std::chrono::system_clock::to_time_t(now);
+        // auto local_tm = *std::localtime(&now_time);
+
+        // // Print something like: 2025-02-13 09:42:10 | ticks=12345
+        // std::cout << std::put_time(&local_tm, "%Y-%m-%d %H:%M:%S")
+        //         << " | ticks=" << ticks << std::endl;
+
         input();
 
+        // Let's cap the frame here, seems to somehow block terminal output
         sdl_imgui_frame();
 
 		uint16_t lc3Address = reg[R_PC];
@@ -459,7 +502,11 @@ void interpreter_run()
 		{
 			cache_run(codeCache[cacheIndex]);
 		}
+        // Uint32 endTime = SDL_GetTicks();
+        // printf("[DEBUG] Frame Time: %d ms\n", endTime - startTime);
 	}
+
+    // frameCounter += 1;
 }
 
 void cache_run(struct lc3Cache cache)
@@ -483,14 +530,14 @@ void cache_run(struct lc3Cache cache)
         instr_call_table[op](instr);
 
         // Step-in Debugging
-        if (isStepIn)
-        {
-            // TODO: Must receive a signal from disa window to execute the next instruction
-            while (!StepInSignal)
-            {
+        // if (isStepIn)
+        // {
+        //     // TODO: Must receive a signal from disa window to execute the next instruction
+        //     // while (!StepInSignal)
+        //     // {
 
-            }
-        }
+        //     // }
+        // }
 	}
 
 }

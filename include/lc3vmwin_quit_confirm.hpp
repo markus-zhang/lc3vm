@@ -2,4 +2,4 @@
 
 #include <imgui.h>
 
-bool Quit_Confirm(bool* isRunning);
+void Quit_Confirm(bool* isRunning, bool* signalQuit);

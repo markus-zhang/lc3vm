@@ -37,7 +37,8 @@ enum Error
 {
     ERROR_LOADFILE = 1,
     ERROR_LOAD_FILE_HEADER,
-    ERROR_VM_INIT_FAIL
+    ERROR_VM_INIT_FAIL,
+    ERROR_VALUE
 };
 
 struct Glyph
