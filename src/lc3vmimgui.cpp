@@ -17,6 +17,7 @@
 #include <chrono>
 #include <ctime>
 #include <iomanip>
+#include <string>
 
 /* ------- function declarations begin -------- */
 // Initialization
@@ -60,9 +61,12 @@ void update_flag(uint16_t value);
 // trap functions
 void trap_0x20();
 void trap_0x21();
+void trap_0x21_imgui();
 void trap_0x22();
+void trap_0x22_imgui();
 void trap_0x23();
 void trap_0x24();
+void trap_0x24_imgui();
 void trap_0x25();
 
 /* ------- function declarations end --------*/
@@ -111,6 +115,7 @@ LC3VMdisawindow disaWindow;
 bool keyPressed;
 uint8_t lastKeyPressed;
 struct termios original_tio;
+ImGuiTextBuffer consoleBuffer;
 
 // Registers
 uint16_t reg[R_COUNT];
@@ -317,20 +322,29 @@ void sdl_imgui_frame()
     ImGui_ImplSDLRenderer2_NewFrame();
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
-    if (isDebug)
-    {
-        memoryWindow.Draw();
-    }
+    // if (isDebug)
+    // {
+    //     memoryWindow.Draw();
+    // }
 
-    if (isDisa)
-    {
-        disaWindow.Draw();
-    }
+    // if (isDisa)
+    // {
+    //     disaWindow.Draw();
+    // }
 
     if (signalQuit)
     {
         Quit_Confirm(&isRunning, &signalQuit);
     }
+
+	/*
+		Test the idea of an ImGui console
+	*/
+	if (ImGui::Begin("LC3 Console"))
+	{
+		ImGui::TextUnformatted(consoleBuffer.begin());
+	}
+	ImGui::End();
 
     ImGui::Render();
     ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), renderer);
@@ -482,6 +496,7 @@ void interpreter_run()
         sdl_imgui_frame();
 
 		uint16_t lc3Address = reg[R_PC];
+		
 		int cacheIndex = cache_find(lc3Address);
 
 		// if cache not found, then build and insert
@@ -805,16 +820,19 @@ void op_trap(uint16_t instr)
 			trap_0x20();
 			break;
 		case 0x21:
-			trap_0x21();
+			// trap_0x21();
+			trap_0x21_imgui();
 			break;
 		case 0x22:
-			trap_0x22();
+			// trap_0x22();
+			trap_0x22_imgui();
 			break;
 		case 0x23:
 			trap_0x23();
 			break;
 		case 0x24:
-			trap_0x24();
+			// trap_0x24();
+			trap_0x24_imgui();
 			break;
 		case 0x25:
 			trap_0x25();
@@ -856,6 +874,7 @@ uint16_t read_memory(uint16_t index)
                 WHY ?
                 If I don't disable it here, the input is insanely lagged
             */
+		    printf("\n");
             keyPressed = false;
         }
         else
@@ -893,6 +912,13 @@ void trap_0x21()
 	fflush(stdout);
 }
 
+void trap_0x21_imgui()
+{
+	char ch = (uint8_t)reg[R_R0];
+	consoleBuffer.append(&ch, (&ch + 1));
+}
+
+
 void trap_0x22()
 {
 	// Write a string of ASCII characters to the console display. The characters are
@@ -914,6 +940,27 @@ void trap_0x22()
 	}
 	// ui_debug_info(reg, 25);
 	fflush(stdout);
+}
+
+void trap_0x22_imgui()
+{
+	// Write a string of ASCII characters to the console display. The characters are
+	// contained in consecutive memory locations, one character per memory location,
+	// starting with the address specified in R0. Writing terminates with the occurrence of
+	// x0000 in a memory location.
+
+	for (uint16_t i = reg[R_R0]; ;i++)
+	{
+		char ch = read_memory(i);
+		if (ch == 0)
+		{
+			break;
+		}
+		else
+		{
+			consoleBuffer.append(&ch, (&ch + 1));
+		}
+	}
 }
 
 void trap_0x23()
@@ -959,11 +1006,45 @@ void trap_0x24()
 		{
 			putc((uint8_t)(value & 0x00FF), stdout);
 			putc(((uint8_t)(value >> 8)), stdout);
-			// ui_debug_info(reg, 25);
 		}
 	}
 	fflush(stdout);
 }
+
+void trap_0x24_imgui()
+{
+	/*
+		Write a string of ASCII characters to the console. 
+		The characters are contained in consecutive memory locations, 
+		two characters per memory location, starting with the address specified in R0. 
+
+		The ASCII code contained in bits [7:0] of a memory
+		location is written to the console first. 
+		
+		Then the ASCII code contained in bits [15:8] of that memory location is written to the console. 
+		
+		(A character string consisting of
+		an odd number of characters to be written will have x00 in bits [15:8] of the
+		memory location containing the last character to be written.) Writing terminates
+		with the occurrence of x0000 in a memory location.
+	*/
+	for (uint16_t i = reg[R_R0]; ;i++)
+	{
+		uint16_t value = read_memory(i);
+		if (value == 0)
+		{
+			break;
+		}
+		else
+		{
+			char ch = (uint8_t)(value & 0x00FF);
+			consoleBuffer.append(&ch, (&ch + 1));
+			ch = (uint8_t)(value >> 8);
+			consoleBuffer.append(&ch, (&ch + 1));
+		}
+	}
+}
+
 
 void trap_0x25()
 {

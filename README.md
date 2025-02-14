@@ -63,3 +63,7 @@ New TODOs: To make it a bit more useful, we need to add step-in debugging, other
 + Add a new window for registers
 
 + Add code in lc3vmwin_memory.cpp that adds an input box. Users can input an address and the memory window "jumps" to that address (or the nearest 0x__00)
+
+= 2025-02-13 =========================================================
+
++ Add code for a console
