@@ -29,6 +29,7 @@ void sdl_imgui_frame();
 
 // interpreter run function
 void interpreter_run();
+void interpreter_run_test();
 void run();
 void shutdown();
 void cache_run(struct lc3Cache cache);
@@ -72,7 +73,7 @@ void trap_0x25();
 /* ------- function declarations end --------*/
 
 /* Global variables BEGIN -------------------------------------*/
-uint8_t DEBUG_MODE = DEBUG_OFF;
+uint8_t DEBUG_MODE = DEBUG_DIS;
 
 // LC-3 specific BEGIN ------------------------------------------
 enum
@@ -166,6 +167,8 @@ int init()
     /* --------------------------------Loading End----------------------------- */
     SDL_Init(SDL_INIT_EVERYTHING);
 
+	SDL_SetHint(SDL_HINT_RENDER_VSYNC, "0");
+
     SDL_DisplayMode displayMode;
     if (SDL_GetCurrentDisplayMode(0, &displayMode) != 0) {
         std::cerr << "SDL_GetCurrentDisplayMode Error: " << SDL_GetError() << std::endl;
@@ -177,8 +180,8 @@ int init()
         "ImGui Test",
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
-        1920,
-        1080,
+        SCREEN_WIDTH,
+        SCREEN_HEIGHT,
         SDL_WINDOW_SHOWN
     );
 
@@ -202,7 +205,7 @@ int init()
     isRunning = true;
     isDebug = false;
     isDisa = false;
-    // Test step in "debugging"
+    // Step in "debugging"
     isStepIn = true;
     StepInSignal = false;
 
@@ -222,7 +225,6 @@ void input()
         // ImGui has priority if user is interacting with it
         if (io.WantCaptureKeyboard)
         {
-            // printf("I wantcontrol of keyboard!\n");
             continue;
         }
 
@@ -250,11 +252,11 @@ void input()
             {
                 keyPressed = true;
                 lastKeyPressed = sdlEvent.key.keysym.sym & 0x00FF;
-                printf("Key pressed\n");
+                // printf("Key pressed\n");
 
                 if (sdlEvent.key.keysym.sym == SDLK_ESCAPE)
                 {
-                    keyPressed = true;
+                    // keyPressed = true;
                     // When editing, esc is used to close the editor mini window
                     // as editorMode is the controlling boolean
                     if (!memoryWindow.editorMode)
@@ -300,14 +302,16 @@ void input()
                         isDisa = !isDisa;
                     }
                 }
+				break;
             }
+			default:
+				break;
         }
     }
 }
 
 void sdl_imgui_frame()
 {
-    // Uint32 startTime = SDL_GetTicks();    
     /* ----------------------- RENDERING PART -------------------------- */
 
     SDL_SetRenderDrawColor(renderer, 21, 21, 21, 255);
@@ -322,15 +326,15 @@ void sdl_imgui_frame()
     ImGui_ImplSDLRenderer2_NewFrame();
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
-    // if (isDebug)
-    // {
-    //     memoryWindow.Draw();
-    // }
+    if (isDebug)
+    {
+        memoryWindow.Draw();
+    }
 
-    // if (isDisa)
-    // {
-    //     disaWindow.Draw();
-    // }
+    if (isDisa)
+    {
+        disaWindow.Draw();
+    }
 
     if (signalQuit)
     {
@@ -352,16 +356,6 @@ void sdl_imgui_frame()
     // ImGui part END ----------------------------------------------------
 
     SDL_RenderPresent(renderer);
-
-    // HACK: Check if any UI needs rendering 
-    // TODO: Figure out how to remove the Quit_COnfirm window
-    // if (!isDebug && !isDisa && !signalQuit)
-    // {
-    //     return;
-    // }
-
-    // Uint32 endTime = SDL_GetTicks();
-    // printf("[DEBUG] Frame Time: %d ms\n", endTime - startTime);
 }
 
 void run()
@@ -476,24 +470,19 @@ void shutdown()
 
 void interpreter_run()
 {   
-    // static int frameCounter = 0;
+    Uint32 startTime = SDL_GetTicks();
+
 	while (isRunning)
 	{
-        // Uint32 startTime = SDL_GetTicks(); 
-        // Uint32 ticks = SDL_GetTicks(); 
-        // using Clock = std::chrono::system_clock;
-        // auto now      = Clock::now();
-        // auto now_time = std::chrono::system_clock::to_time_t(now);
-        // auto local_tm = *std::localtime(&now_time);
-
-        // // Print something like: 2025-02-13 09:42:10 | ticks=12345
-        // std::cout << std::put_time(&local_tm, "%Y-%m-%d %H:%M:%S")
-        //         << " | ticks=" << ticks << std::endl;
-
         input();
 
-        // Let's cap the frame here, seems to somehow block terminal output
-        sdl_imgui_frame();
+        Uint32 now = SDL_GetTicks();
+		// Cap rendering to 60 fps
+		if (now - startTime >= MSPF)
+		{
+        	sdl_imgui_frame();
+			startTime = now;
+		}
 
 		uint16_t lc3Address = reg[R_PC];
 		
@@ -517,11 +506,35 @@ void interpreter_run()
 		{
 			cache_run(codeCache[cacheIndex]);
 		}
-        // Uint32 endTime = SDL_GetTicks();
-        // printf("[DEBUG] Frame Time: %d ms\n", endTime - startTime);
 	}
+}
 
-    // frameCounter += 1;
+void interpreter_run_test()
+{   
+	Uint32 startTime = SDL_GetTicks();
+	
+	while (isRunning)
+	{
+
+        input();
+
+		Uint32 now = SDL_GetTicks();
+		// Cap rendering to 60 fps
+		if (now - startTime >= MSPF)
+		{
+        	sdl_imgui_frame();
+			startTime = now;
+		}
+
+		uint16_t lc3Address = reg[R_PC];
+
+		uint16_t instr = memory[lc3Address];	
+		uint16_t op = instr >> 12;
+		
+		reg[R_PC] += 1;	
+		
+        instr_call_table[op](instr);
+	}
 }
 
 void cache_run(struct lc3Cache cache)
@@ -559,7 +572,7 @@ void cache_run(struct lc3Cache cache)
 
 void cache_dump(int cacheIndex)
 {
-	printf("--------Dumping Cache No. %d BEGIN--------\n", cacheIndex);
+	// printf("--------Dumping Cache No. %d BEGIN--------\n", cacheIndex);
 	if (cacheIndex >= cacheCount)
 	{
 		printf("Wrong cache index at: %d\n", cacheIndex);
@@ -568,7 +581,7 @@ void cache_dump(int cacheIndex)
 	{
         disaWindow.Load(codeCache[cacheIndex].codeBlock, codeCache[cacheIndex].numInstr, codeCache[cacheIndex].lc3MemAddress);
 	}
-	printf("--------Dumping Cache No. %d END----------\n", cacheIndex);
+	// printf("--------Dumping Cache No. %d END----------\n", cacheIndex);
 }
 
 /* Op code functions */
@@ -871,10 +884,13 @@ uint16_t read_memory(uint16_t index)
             write_memory(MR_KBSR, 1 << 15);
             memory[MR_KBDR] = lastKeyPressed;
             /* 
-                WHY ?
+                WHY set keyPressed = false?
                 If I don't disable it here, the input is insanely lagged
+
+				*Edit*:
+				The above is wrong. It is still insanely lagged...
             */
-		    printf("\n");
+		    // printf("\n");
             keyPressed = false;
         }
         else
@@ -968,14 +984,17 @@ void trap_0x23()
 	// Print a prompt on the screen and read a single character from the keyboard. 
 	// The character is echoed onto the console monitor, and its ASCII code is copied into R0.
 	// The high eight bits of R0 are cleared.
+
+	// TODO: We need to figure out what to do with 0x23, right now we don't use it in 2048
+	// but eventually we need to implement an ImGui version of it
 	
-	printf("> ");
-	reg[R_R0] = (uint16_t)fgetc(stdin);
-	reg[R_R0] &= 0x00FF;
-	putc((uint8_t)reg[R_R0], stdout);
-	// ui_debug_info(reg, 25);
-	fflush(stdout);
-	update_flag(reg[R_R0]);
+	// printf("> ");
+	// reg[R_R0] = (uint16_t)fgetc(stdin);
+	// reg[R_R0] &= 0x00FF;
+	// putc((uint8_t)reg[R_R0], stdout);
+	// // ui_debug_info(reg, 25);
+	// fflush(stdout);
+	// update_flag(reg[R_R0]);
 }
 
 void trap_0x24()
@@ -1049,6 +1068,7 @@ void trap_0x24_imgui()
 void trap_0x25()
 {
 	// Halt execution and print a message on the console.
+	// TODO: Implement an ImGui version of it
 	printf("\nSystem HALT\n");
 	isRunning = false;
 }

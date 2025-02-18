@@ -3,7 +3,11 @@
 #include <imgui.h>
 #include <cinttypes>
 
-#define MAX_SIZE 65536
+#define MAX_SIZE        65536
+#define FPS             60
+#define MSPF            1000 / FPS
+#define SCREEN_WIDTH    2048
+#define SCREEN_HEIGHT   1152
 
 enum
 {
