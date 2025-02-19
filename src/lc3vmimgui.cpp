@@ -978,7 +978,9 @@ void trap_0x22_imgui()
 	{
 		if (ch == 0x1B)
 		{
-			// control sequence, need to return afterwards
+			// EXPLAIN: For control sequences, the program needs to return instead of staying in the loop, otherwise somehow the next string (e.g. the +--------------+ one) gets fed into parse_escape()
+
+			// TODO: ^ should not happen as the next string does NOT contain 0x1B, figure out why
 			parse_escape(memory, i);
 			return;
 		}
@@ -994,7 +996,7 @@ void trap_0x22_imgui()
 void parse_escape(uint16_t memory[], uint16_t& index)
 {
     /*
-        I want to be pragmatic and only deals with the control sequences in the code
+        I want to be pragmatic and only deals with the control sequences in 2048
         "\e[37m 2  \e[0m"
         "\e[1;33m1024\e[0m"
         "\e[2J\e[H\e[3J"
@@ -1003,8 +1005,14 @@ void parse_escape(uint16_t memory[], uint16_t& index)
 
         In the third case, we need to clean the buffer -> by clearing the buffer, the ImGui console is cleared
     */
+
+	// EXPLAIN: We get away from implicitly casting a uint16_t to a char because of how LC-3 memory lays out strings: each character only takes the lower byte of a 2-byte memory chunk -> they are NOT char by char (check 2048.bin for details)
+
     char ch = read_memory(index++);
 	printf("ch is %d\n", (int)ch);
+
+	// EXPLAIN: Still not exactly sure why, but '\e' doesn't work (compiler compalins non-standard ISO excape character), so I have to use 0x1b
+
     if (ch != 0x1b)
     {
         fprintf(stderr, "memory[%u] should be e\n", index);
@@ -1022,6 +1030,7 @@ void parse_escape(uint16_t memory[], uint16_t& index)
     ch = read_memory(index++);
     if (ch == '2')
     {
+		// TODO: This loop is probably useless, check whether I can remove it
         while (ch != '\0')
         {
             // Do nothing, just increment index
@@ -1031,6 +1040,8 @@ void parse_escape(uint16_t memory[], uint16_t& index)
         consoleBuffer.clear();
     }
     else
+	// EXPLAIN: if ch != 2 then in 2048 it means it's either 3 or 1 depending on the control sequence (checkout "asni board labels" section in 2048.asm)
+
     {
         /* So we just need to take the number between m and \e */
         while (ch != 'm')

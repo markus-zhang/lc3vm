@@ -74,4 +74,8 @@ New TODOs: To make it a bit more useful, we need to add step-in debugging, other
 
 * I figured out how to do the control sequences. It's pretty hacky and ONLY works for 2048, but I really do not have interests to pursuit a general solution.
 
++ Immediate next minor task: check line 983 TODO in `trap_0x22_imgui()`
+
++ Immediate next minor task: check line 1033 TODO in `parse_escape()`
+
 + Next major task: continue working on the input box in lc3vmwin_memory.cpp
