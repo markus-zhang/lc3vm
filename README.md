@@ -79,3 +79,11 @@ New TODOs: To make it a bit more useful, we need to add step-in debugging, other
 + Immediate next minor task: check line 1033 TODO in `parse_escape()`
 
 + Next major task: continue working on the input box in lc3vmwin_memory.cpp
+
+= 2025-02-19
+
+* line 1033 TODO in `parse_escape()`: Yes we can comment it all out, because after `parse_escape()` we simply return from `trap_0x22_imgui` so no characters are read
+
+* check line 983 TODO in `trap_0x22_imgui()`: Yes we do need the `return;` becase `ch` is not updated in `parse_escape()`, so when we get out of `parse_escape()`, `ch` is still `0x1B`, and then the program goes into `parse_escape()` again with the next string, which doesn't really have `0x1B` as the first character
+
++ Next major task: continue working on the input box in lc3vmwin_memory.cpp

@@ -980,7 +980,7 @@ void trap_0x22_imgui()
 		{
 			// EXPLAIN: For control sequences, the program needs to return instead of staying in the loop, otherwise somehow the next string (e.g. the +--------------+ one) gets fed into parse_escape()
 
-			// TODO: ^ should not happen as the next string does NOT contain 0x1B, figure out why
+			// EXPLAIN: OK I know what's going on. ch is not updated in parse_escape(), so we need to explicitly return from this function, otherwise ch is still 0x1B and the next string triggers an error in parse_escape()
 			parse_escape(memory, i);
 			return;
 		}
@@ -1031,12 +1031,12 @@ void parse_escape(uint16_t memory[], uint16_t& index)
     if (ch == '2')
     {
 		// TODO: This loop is probably useless, check whether I can remove it
-        while (ch != '\0')
-        {
-            // Do nothing, just increment index
-			ch = read_memory(index++);
-			// printf("%c-", ch);
-        }
+        // while (ch != '\0')
+        // {
+        //     // Do nothing, just increment index
+		// 	ch = read_memory(index++);
+		// 	// printf("%c-", ch);
+        // }
         consoleBuffer.clear();
     }
     else
