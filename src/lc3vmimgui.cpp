@@ -30,6 +30,7 @@ void sdl_imgui_frame();
 // interpreter run function
 void interpreter_run();
 void interpreter_run_test();
+void parse_escape(uint16_t memory[], uint16_t& index);
 void run();
 void shutdown();
 void cache_run(struct lc3Cache cache);
@@ -301,6 +302,11 @@ void input()
                     {
                         isDisa = !isDisa;
                     }
+                }
+				// Test clear textBuffer
+				else if (sdlEvent.key.keysym.sym == SDLK_0)
+                {
+                    consoleBuffer.clear();
                 }
 				break;
             }
@@ -965,18 +971,109 @@ void trap_0x22_imgui()
 	// starting with the address specified in R0. Writing terminates with the occurrence of
 	// x0000 in a memory location.
 
-	for (uint16_t i = reg[R_R0]; ;i++)
+	uint16_t i = reg[R_R0];
+	char ch = read_memory(i);
+
+	while (ch != 0)
 	{
-		char ch = read_memory(i);
-		if (ch == 0)
+		if (ch == 0x1B)
 		{
-			break;
+			// control sequence, need to return afterwards
+			parse_escape(memory, i);
+			return;
 		}
 		else
 		{
 			consoleBuffer.append(&ch, (&ch + 1));
+			i++;
+			ch = read_memory(i);
 		}
 	}
+
+	// for (uint16_t i = reg[R_R0]; ;i++)
+	// {
+	// 	char ch = read_memory(i);
+	// 	if (ch == 0)
+	// 	{
+	// 		break;
+	// 	}
+	// 	else if (ch == '\e')
+	// 	{
+	// 		/* 
+	// 			TODO: Figure out how to deal with escape characters
+	// 			I think the best way to do it is:
+	// 			- Check ch, if ch is '\e', then we expect escaping characters
+	// 			- if it's "\e[2J\e[H\e[3J" we need to clear the buffer
+	// 			- if it's something like "\e[37m 2  \e[0m" we ignore the colors and take " 2  "
+	// 		*/
+
+			
+	// 		consoleBuffer.append(&ch, (&ch + 1));
+	// 	}
+	// 	else 
+	// 	{
+	// 		consoleBuffer.append(&ch, (&ch + 1));
+	// 	}
+	// }
+}
+
+void parse_escape(uint16_t memory[], uint16_t& index)
+{
+    /*
+        I want to be pragmatic and only deals with the control sequences in the code
+        "\e[37m 2  \e[0m"
+        "\e[1;33m1024\e[0m"
+        "\e[2J\e[H\e[3J"
+
+        In the first and second case, we only need to retrieve the number in the middle (2 and 1024);
+
+        In the third case, we need to clean the buffer
+    */
+    char ch = read_memory(index++);
+	printf("ch is %d\n", (int)ch);
+    if (ch != 0x1b)
+    {
+        fprintf(stderr, "memory[%u] should be e\n", index);
+        exit(ERROR_VALUE);
+    }
+
+	ch = read_memory(index++);
+    if (ch != '[')
+    {
+        fprintf(stderr, "memory[%u] should be [ after \\e\n", index);
+        exit(ERROR_VALUE);
+    }
+
+    /* Now if the next char is 2 we just read the whole sequence till the end, and clear buffer */
+    ch = read_memory(index++);
+    if (ch == '2')
+    {
+		printf("OK now we are going to clear the screen...\n");
+		// ch = read_memory(index++);
+        while (ch != '\0')
+        {
+            // Do nothing, just increment index
+			ch = read_memory(index++);
+			printf("%c-", ch);
+        }
+        consoleBuffer.clear();
+    }
+    else
+    {
+		// printf("OK now we are going to print the numbers...\n");
+        /* So we just need to take the number between m and \e */
+        while (ch != 'm')
+        {
+            ch = read_memory(index++);
+        }
+        /* Now we are pointing at the next char following 'm', read until we hit \ */
+		ch = read_memory(index++);
+        while (ch != 0x1b)
+        {
+            consoleBuffer.append(&ch, (&ch + 1));
+			ch = read_memory(index++);
+        }
+    }
 }
 
 void trap_0x23()
