@@ -989,32 +989,6 @@ void trap_0x22_imgui()
 			ch = read_memory(i);
 		}
 	}
-
-	// for (uint16_t i = reg[R_R0]; ;i++)
-	// {
-	// 	char ch = read_memory(i);
-	// 	if (ch == 0)
-	// 	{
-	// 		break;
-	// 	}
-	// 	else if (ch == '\e')
-	// 	{
-	// 		/* 
-	// 			TODO: Figure out how to deal with escape characters
-	// 			I think the best way to do it is:
-	// 			- Check ch, if ch is '\e', then we expect escaping characters
-	// 			- if it's "\e[2J\e[H\e[3J" we need to clear the buffer
-	// 			- if it's something like "\e[37m 2  \e[0m" we ignore the colors and take " 2  "
-	// 		*/
-
-			
-	// 		consoleBuffer.append(&ch, (&ch + 1));
-	// 	}
-	// 	else 
-	// 	{
-	// 		consoleBuffer.append(&ch, (&ch + 1));
-	// 	}
-	// }
 }
 
 void parse_escape(uint16_t memory[], uint16_t& index)
@@ -1027,7 +1001,7 @@ void parse_escape(uint16_t memory[], uint16_t& index)
 
         In the first and second case, we only need to retrieve the number in the middle (2 and 1024);
 
-        In the third case, we need to clean the buffer
+        In the third case, we need to clean the buffer -> by clearing the buffer, the ImGui console is cleared
     */
     char ch = read_memory(index++);
 	printf("ch is %d\n", (int)ch);
@@ -1048,19 +1022,16 @@ void parse_escape(uint16_t memory[], uint16_t& index)
     ch = read_memory(index++);
     if (ch == '2')
     {
-		printf("OK now we are going to clear the screen...\n");
-		// ch = read_memory(index++);
         while (ch != '\0')
         {
             // Do nothing, just increment index
 			ch = read_memory(index++);
-			printf("%c-", ch);
+			// printf("%c-", ch);
         }
         consoleBuffer.clear();
     }
     else
     {
-		// printf("OK now we are going to print the numbers...\n");
         /* So we just need to take the number between m and \e */
         while (ch != 'm')
         {

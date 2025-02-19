@@ -72,6 +72,6 @@ New TODOs: To make it a bit more useful, we need to add step-in debugging, other
 
 * Big day! I figured out why the display is lagging so much. After much debugging (most of the past week and today), I tested everything and finally figured out that the frame rate is crazingly high, and the rendering loop is blocking everything else. It was fixed by simply capping the frame rate to 60 FPS. I actually knew about this in the first day of debugging this issue but somehow didn't take it seriously.
 
-+ The console works, but doesn't really. ImGui doesn't care about escape characters so I have to manually code it. I'll figure out what to do. This is going to be my immediate task for this week.
+* I figured out how to do the control sequences. It's pretty hacky and ONLY works for 2048, but I really do not have interests to pursuit a general solution.
 
-    + Here is one example: CLEAR STRING "\e[2J\e[H\e[3J"
++ Next major task: continue working on the input box in lc3vmwin_memory.cpp
