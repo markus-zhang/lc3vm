@@ -87,3 +87,21 @@ New TODOs: To make it a bit more useful, we need to add step-in debugging, other
 * check line 983 TODO in `trap_0x22_imgui()`: Yes we do need the `return;` becase `ch` is not updated in `parse_escape()`, so when we get out of `parse_escape()`, `ch` is still `0x1B`, and then the program goes into `parse_escape()` again with the next string, which doesn't really have `0x1B` as the first character
 
 + Next major task: continue working on the input box in lc3vmwin_memory.cpp
+
++ Next immediate minor task: fix seg fault in Char_Array_to_Number(), must be something to do with array index error
+
+= 2025-02-23
+
+* Fixed seg fault in Char_Array_to_Number(), must be something to do with array index error -> I don't know why buy I'm keeping using `size_t` as loop index, have I lost my mind? Probably.
+
+* Fixed a few bugs about the memory map
+    
+    * memory was contrainted to uint16_t, which is WRONG because it is supposed to be 64K 16-bit number but the memory data structure has 8-bit for each memory chunk, so it should be uint32_t, from 0x00000 to 0x1ffff
+
+    * the > button doesn't perform properly and seg fault, fixed the code
+
+    * added the >> button, I'll modify the < part, remove the Row < button and add a Page << button. Like, who wants to scroll by row when you can scroll by page?
+
++ Next mmediately minor task: Remove the Row < button and add Page << button. Keep the code as comment so that we can test the Page <, Page <<, Page > and Page >> buttons easily.
+
++ Next immediately minor task: align (downward) the return value of `Char_Array_to_Number()` to the nearest 0x00?0, but also make sure that a whole 32 rows are shown. For example, round down 0x1034 to 0x1030 is perfectly fine as we can show all 16 rows from 0x1030, but for 0xfff1 we have to round it further down to 0xfe00 so that all 16 rows are shown.

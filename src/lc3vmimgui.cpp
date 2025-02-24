@@ -194,7 +194,7 @@ int init()
     ImGui_ImplSDLRenderer2_Init(renderer);
 
     // Memory Window
-    WindowConfig memoryWinConfig {true, 20, {848, 720}, {848, 720}, {0, 0}};
+    WindowConfig memoryWinConfig {true, 20, {864, 720}, {864, 720}, {0, 0}};
     memoryWindow = LC3VMMemorywindow(memory, (size_t)(MAX_SIZE * 2), memoryWinConfig);
     
     // Insturction Cache Window
@@ -1009,7 +1009,7 @@ void parse_escape(uint16_t memory[], uint16_t& index)
 	// EXPLAIN: We get away from implicitly casting a uint16_t to a char because of how LC-3 memory lays out strings: each character only takes the lower byte of a 2-byte memory chunk -> they are NOT char by char (check 2048.bin for details)
 
     char ch = read_memory(index++);
-	printf("ch is %d\n", (int)ch);
+	// printf("ch is %d\n", (int)ch);
 
 	// EXPLAIN: Still not exactly sure why, but '\e' doesn't work (compiler compalins non-standard ISO excape character), so I have to use 0x1b
 

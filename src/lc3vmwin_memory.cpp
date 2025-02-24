@@ -184,7 +184,7 @@ void LC3VMMemorywindow::Draw()
         if (i % 16 == 0)
         {
             ImGui::SetCursorPosX(20.0f);
-            ss << "0x" << std::hex << std::setfill('0') << std::setw(4) << static_cast<int>(i) << " ";
+            ss << "0x" << std::hex << std::setfill('0') << std::setw(5) << static_cast<int>(i) << " ";
             std::string header = ss.str();
             ImGui::Text("%s", header.c_str());
             ss.str("");
@@ -255,27 +255,46 @@ void LC3VMMemorywindow::Draw()
         ImGui::PopID();
     }
     
-    ImGui::SameLine();
-    if (ImGui::Button("Row >"))
-    {
-        // A page is 32 rows, so cannot scroll past that
-        if (initialAddress <= bufferSize - 33 * 16)    
-        {
-            initialAddress += 0x10;
-        }
-    }
+    // ImGui::SameLine();
+    // if (ImGui::Button("Row >"))
+    // {
+    //     // A page is 32 rows, so cannot scroll past that
+    //     if (initialAddress <= bufferSize - 33 * 16)    
+    //     {
+    //         initialAddress += 0x10;
+    //     }
+    // }
     ImGui::SameLine();
     if (ImGui::Button("Page >"))
     {
-        // A page is 32 rows, so cannot scroll past that
-        if (initialAddress <= bufferSize - 33 * 16)    
+        /* 
+            A page is 32 rows, so cannot scroll past that
+
+            For example, the last page is from 0x1fe00 to 0x1fff0,
+            so initialAddress cannot go over 0x1fe00 (bufferSize which is 0x20000 - 0x200)
+        */
+        uint32_t nextPageInitialAddress = initialAddress + 0x200;
+        if (nextPageInitialAddress > bufferSize - 0x200)
         {
-            initialAddress += 32 * 0x10;
+            initialAddress = bufferSize - 0x200;
         }
         else
         {
-            initialAddress = (uint16_t)(bufferSize - 33 * 16);
+            initialAddress = nextPageInitialAddress;
         }
+        // if (initialAddress <= bufferSize - 33 * 16)    
+        // {
+        //     initialAddress += 32 * 0x10;
+        // }
+        // else
+        // {
+        //     initialAddress = (uint32_t)(bufferSize - 32 * 16);
+        // }
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Page >>"))
+    {
+        initialAddress = (uint32_t)(bufferSize - 32 * 16);
     }
 
     ImGui::PopStyleColor();
@@ -283,17 +302,39 @@ void LC3VMMemorywindow::Draw()
     /* 
         Adding a TextInput to accept user input of initial address
         - Can only accept hexical numerical values
-        - 4 digits (0040, FFFF) maximum
+        - 5 digits (0040, 1FF00) maximum, should be capped to 0x1FFFE 9which is 0xFFFF * 2)
     */
-    char userInitalAddress[5] = {0};
+    char userInitalAddress[6] = {0};
+    // uint64_t newInitialAddress = 0; 
 
+    ImGui::PushItemWidth(200);
     if (ImGui::InputText("Enter Address: 0x", userInitalAddress, IM_ARRAYSIZE(userInitalAddress), ImGuiInputTextFlags_CharsHexadecimal))
     {
         addressInputMode = true;
         // Just for debugging
-        // ImGui::Text("Address: %ld", Char_Array_to_Number(userInitalAddress, 4));
-        ImGui::Text("addressInputMode: %d", addressInputMode);
+        ImGui::Text("Address inputed: %s", userInitalAddress);
+        // ImGui::Text("Address converted: %ld", Char_Array_to_Number(userInitalAddress, 5));
+        // ImGui::Text("addressInputMode: %d", addressInputMode);
+
+        uint64_t tempInitialAddress = Char_Array_to_Number(userInitalAddress, 5);
+
+        /* First, we align tempInitialAddress to the nearest 16-byte */
+        tempInitialAddress = (tempInitialAddress / 16) * 16;
+
+        /* Then, we check whether we can show 32 rows starting with tempInitialAddress */
+        if (tempInitialAddress > bufferSize - 33 * 16)    
+        {
+            tempInitialAddress = bufferSize - 33 * 16;
+        }
+        // else
+        // {
+        //     tempInitialAddress = (uint64_t)(bufferSize - 33 * 16);
+        // }
+        ImGui::Text("Address converted: 0x%07x", tempInitialAddress);
+        // initialAddress = tempInitialAddress;
     }
+    ImGui::PopItemWidth();
+    
 
     /* If we are in Editor Mode, popup the editor window */
 
@@ -414,31 +455,40 @@ void LC3VMMemorywindow::Editor(ImVec2 mousePos, char* c, char original)
 
 uint64_t LC3VMMemorywindow::Char_Array_to_Number(char buf[], size_t numDigits)
 {
-    /* Cap the number of hex digits to 16, i.e. 16 bytes */
-    if (numDigits > 16)
+    // Debug
+    printf("Hex buffer: %s\n", buf);
+    printf("First character: %c\n", buf[0]);
+
+    /* Cap the number of hex digits to 4, i.e. 4 bytes */
+    if (numDigits > 4)
     {
-        numDigits = 16;
+        numDigits = 4;
     }
 
     uint64_t result = 0;
+    int power = 0;
 
-    for (size_t i = numDigits - 1; i >= 0; i--)
+    int i = numDigits - 1;
+    /* Find the first (highest) byte that is not NULL */
+    while (buf[i] == '\0')
     {
-        if (buf[i] == '\0')
-        {
-            continue;
-        }
+        i -= 1;
+    }
+    printf("i is %d\n", i);
+
+    for (; i >= 0; i--)
+    {
         uint64_t value = Char_to_Number(buf[i]);
-        /* If somehow a bad char (other than 0-9, a-f, A-F) appears, we treat it as a 0 */
-        if (value < 0)
+        if (value == 0xff)
         {
-            // Complain, must be 0-9, a-f or AF
+            // Complain, must be 0-9, a-f or A-F, but do not exit
             fprintf(stderr, "Error reading hex buffer: char is %c\n", buf[i]);
             // exit(ERROR_VALUE);
             value = 0;
         }
-        result += value * (pow(2, numDigits - 1 - i));
+        result += value * (pow(16, power++));
     }
+
     return result;
 }
 
@@ -458,6 +508,6 @@ uint64_t LC3VMMemorywindow::Char_to_Number(char ch)
     }
     else 
     {
-        return -1;
+        return 0xff;
     }
 }

@@ -16,7 +16,7 @@ public:
     ImVec2 winPos;
     bool initialized;
     ImFont* font;
-    uint16_t initialAddress;    // The first line starts from initialAddress
+    uint32_t initialAddress;    // The first line starts from initialAddress
     std::vector<bool> selection;
     bool mouseDoubleClicked;
     ImVec2 mousePos;
