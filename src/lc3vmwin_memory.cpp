@@ -145,15 +145,31 @@ void LC3VMMemorywindow::Draw()
     // I don't use "00 01 02 .. 0F\tASCII") because we need to match the same SameLine() call in the later for loop
     ImGui::PopStyleColor();
     ImGui::SameLine();
-    if (ImGui::Button("Row <"))
+    // if (ImGui::Button("Row <"))
+    // {
+    //     if (initialAddress >= 0x10)
+    //     {
+    //         initialAddress -= 0x10;
+    //     }
+    // }
+
+    if (ImGui::Button("Page <"))
     {
-        if (initialAddress >= 0x10)
+        if (initialAddress <= 0x00200)
         {
-            initialAddress -= 0x10;
+            initialAddress = 0x00000;
+        }
+        else
+        {
+            initialAddress -= 0x200;
         }
     }
+
     ImGui::SameLine();
-    ImGui::Button("Page <");
+    if (ImGui::Button("Page <<"))
+    {
+        initialAddress = 0x00000;
+    }
 
     // Render memory glyphs
 
@@ -308,7 +324,34 @@ void LC3VMMemorywindow::Draw()
     // uint64_t newInitialAddress = 0; 
 
     ImGui::PushItemWidth(200);
-    if (ImGui::InputText("Enter Address: 0x", userInitalAddress, IM_ARRAYSIZE(userInitalAddress), ImGuiInputTextFlags_CharsHexadecimal))
+
+    /* Experimental Callback for next InputText */
+    struct TextCompletion
+    {
+        // Modify character input by altering 'data->Eventchar' (ImGuiInputTextFlags_CallbackCharFilter callback)
+        static int SetInitialAddress(ImGuiInputTextCallbackData* data)
+        {
+            // if (data->EventChar >= 'a' && data->EventChar <= 'z')       { data->EventChar -= 'a' - 'A'; } // Lowercase becomes uppercase
+            // else if (data->EventChar >= 'A' && data->EventChar <= 'Z')  { data->EventChar += 'a' - 'A'; } // Uppercase becomes lowercase
+
+            if (data->EventChar == '\n')
+            {
+                printf("You pressed the enter key!\n");
+            }
+
+            return 0;
+        }
+
+        // Return 0 (pass) if the character is 'i' or 'm' or 'g' or 'u' or 'i', otherwise return 1 (filter out)
+        // static int FilterImGuiLetters(ImGuiInputTextCallbackData* data)
+        // {
+        //     if (data->EventChar < 256 && strchr("imgui", (char)data->EventChar))
+        //         return 0;
+        //     return 1;
+        // }
+    };
+
+    if (ImGui::InputText("Enter Address: 0x", userInitalAddress, IM_ARRAYSIZE(userInitalAddress), ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_CallbackCharFilter, TextCompletion::SetInitialAddress))
     {
         addressInputMode = true;
         // Just for debugging
@@ -456,8 +499,8 @@ void LC3VMMemorywindow::Editor(ImVec2 mousePos, char* c, char original)
 uint64_t LC3VMMemorywindow::Char_Array_to_Number(char buf[], size_t numDigits)
 {
     // Debug
-    printf("Hex buffer: %s\n", buf);
-    printf("First character: %c\n", buf[0]);
+    // printf("Hex buffer: %s\n", buf);
+    // printf("First character: %c\n", buf[0]);
 
     /* Cap the number of hex digits to 4, i.e. 4 bytes */
     if (numDigits > 4)
@@ -474,7 +517,7 @@ uint64_t LC3VMMemorywindow::Char_Array_to_Number(char buf[], size_t numDigits)
     {
         i -= 1;
     }
-    printf("i is %d\n", i);
+    // printf("i is %d\n", i);
 
     for (; i >= 0; i--)
     {

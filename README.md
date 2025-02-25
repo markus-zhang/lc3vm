@@ -105,3 +105,13 @@ New TODOs: To make it a bit more useful, we need to add step-in debugging, other
 + Next mmediately minor task: Remove the Row < button and add Page << button. Keep the code as comment so that we can test the Page <, Page <<, Page > and Page >> buttons easily.
 
 + Next immediately minor task: align (downward) the return value of `Char_Array_to_Number()` to the nearest 0x00?0, but also make sure that a whole 32 rows are shown. For example, round down 0x1034 to 0x1030 is perfectly fine as we can show all 16 rows from 0x1030, but for 0xfff1 we have to round it further down to 0xfe00 so that all 16 rows are shown.
+
+= 2025-02-23
+
+* Done: Remove the Row < button and add Page << button. Keep the code as comment so that we can test the Page <, Page <<, Page > and Page >> buttons easily.
+
+* Done: align (downward) the return value of `Char_Array_to_Number()` to the nearest 0x00?0, but also make sure that a whole 32 rows are shown. For example, round down 0x1034 to 0x1030 is perfectly fine as we can show all 16 rows from 0x1030, but for 0xfff1 we have to round it further down to 0xfe00 so that all 16 rows are shown.
+
++ Next major task: continue working on the input box in lc3vmwin_memory.cpp
+
+    + Most is done, but I need to use a Callback to set initialAddress when enter key is hit (I don't want initialAddress to be changed with each keystroke, going to too much)
