@@ -298,14 +298,6 @@ void LC3VMMemorywindow::Draw()
         {
             initialAddress = nextPageInitialAddress;
         }
-        // if (initialAddress <= bufferSize - 33 * 16)    
-        // {
-        //     initialAddress += 32 * 0x10;
-        // }
-        // else
-        // {
-        //     initialAddress = (uint32_t)(bufferSize - 32 * 16);
-        // }
     }
     ImGui::SameLine();
     if (ImGui::Button("Page >>"))
@@ -321,43 +313,27 @@ void LC3VMMemorywindow::Draw()
         - 5 digits (0040, 1FF00) maximum, should be capped to 0x1FFFE 9which is 0xFFFF * 2)
     */
     char userInitalAddress[6] = {0};
-    // uint64_t newInitialAddress = 0; 
 
     ImGui::PushItemWidth(200);
 
     /* Experimental Callback for next InputText */
-    struct TextCompletion
-    {
-        // Modify character input by altering 'data->Eventchar' (ImGuiInputTextFlags_CallbackCharFilter callback)
-        static int SetInitialAddress(ImGuiInputTextCallbackData* data)
-        {
-            // if (data->EventChar >= 'a' && data->EventChar <= 'z')       { data->EventChar -= 'a' - 'A'; } // Lowercase becomes uppercase
-            // else if (data->EventChar >= 'A' && data->EventChar <= 'Z')  { data->EventChar += 'a' - 'A'; } // Uppercase becomes lowercase
+    // struct TextCompletion
+    // {
+    //     // Modify character input by altering 'data->Eventchar' (ImGuiInputTextFlags_CallbackCharFilter callback)
+    //     int SetInitialAddress(ImGuiInputTextCallbackData* data)
+    //     {
+    //         if (data->EventChar == '\n')
+    //         {
+    //             printf("You pressed the enter key!\n");
+    //             // uint64_t tempInitialAddress = Char_Array_to_Number(userInitalAddress, 5);
+    //         }
+    //         return 0;
+    //     }
+    // };
 
-            if (data->EventChar == '\n')
-            {
-                printf("You pressed the enter key!\n");
-            }
-
-            return 0;
-        }
-
-        // Return 0 (pass) if the character is 'i' or 'm' or 'g' or 'u' or 'i', otherwise return 1 (filter out)
-        // static int FilterImGuiLetters(ImGuiInputTextCallbackData* data)
-        // {
-        //     if (data->EventChar < 256 && strchr("imgui", (char)data->EventChar))
-        //         return 0;
-        //     return 1;
-        // }
-    };
-
-    if (ImGui::InputText("Enter Address: 0x", userInitalAddress, IM_ARRAYSIZE(userInitalAddress), ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_CallbackCharFilter, TextCompletion::SetInitialAddress))
+    if (ImGui::InputText("Enter Address: 0x", userInitalAddress, IM_ARRAYSIZE(userInitalAddress), ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_EnterReturnsTrue))
     {
         addressInputMode = true;
-        // Just for debugging
-        ImGui::Text("Address inputed: %s", userInitalAddress);
-        // ImGui::Text("Address converted: %ld", Char_Array_to_Number(userInitalAddress, 5));
-        // ImGui::Text("addressInputMode: %d", addressInputMode);
 
         uint64_t tempInitialAddress = Char_Array_to_Number(userInitalAddress, 5);
 
@@ -365,17 +341,13 @@ void LC3VMMemorywindow::Draw()
         tempInitialAddress = (tempInitialAddress / 16) * 16;
 
         /* Then, we check whether we can show 32 rows starting with tempInitialAddress */
-        if (tempInitialAddress > bufferSize - 33 * 16)    
+        if (tempInitialAddress > bufferSize - 0x200)    
         {
-            tempInitialAddress = bufferSize - 33 * 16;
+            tempInitialAddress = bufferSize - 0x200;
         }
-        // else
-        // {
-        //     tempInitialAddress = (uint64_t)(bufferSize - 33 * 16);
-        // }
-        ImGui::Text("Address converted: 0x%07x", tempInitialAddress);
-        // initialAddress = tempInitialAddress;
+        initialAddress = tempInitialAddress;
     }
+
     ImGui::PopItemWidth();
     
 
@@ -503,9 +475,9 @@ uint64_t LC3VMMemorywindow::Char_Array_to_Number(char buf[], size_t numDigits)
     // printf("First character: %c\n", buf[0]);
 
     /* Cap the number of hex digits to 4, i.e. 4 bytes */
-    if (numDigits > 4)
+    if (numDigits > 5)
     {
-        numDigits = 4;
+        numDigits = 5;
     }
 
     uint64_t result = 0;
