@@ -3,7 +3,7 @@
 #include <math.h> 
 
 
-LC3VMMemorywindow::LC3VMMemorywindow()
+LC3VMMemoryWindow::LC3VMMemoryWindow()
 {
     buffer.reserve(0);
     bufferSize = 0;
@@ -25,7 +25,7 @@ LC3VMMemorywindow::LC3VMMemorywindow()
     addressInputMode = false;
 }
 
-LC3VMMemorywindow::LC3VMMemorywindow(uint16_t* memory, size_t memorySize, const WindowConfig& config)
+LC3VMMemoryWindow::LC3VMMemoryWindow(uint16_t* memory, size_t memorySize, const WindowConfig& config)
 {
     assert(memory != nullptr);
 
@@ -75,7 +75,7 @@ LC3VMMemorywindow::LC3VMMemorywindow(uint16_t* memory, size_t memorySize, const 
     // char memoryEditedBackup = 0;
 }
 
-void LC3VMMemorywindow::Draw()
+void LC3VMMemoryWindow::Draw()
 {
     /*
         This is to be put into a rendering loop (e.g. SDL2)
@@ -379,7 +379,7 @@ void LC3VMMemorywindow::Draw()
     ImGui::End();
 }
 
-unsigned char LC3VMMemorywindow::Calculate_Char(char buf[], char original)
+unsigned char LC3VMMemoryWindow::Calculate_Char(char buf[], char original)
 {
     if (!buf)
     {
@@ -427,7 +427,7 @@ unsigned char LC3VMMemorywindow::Calculate_Char(char buf[], char original)
     return result;
 }
 
-void LC3VMMemorywindow::Editor(ImVec2 mousePos, char* c, char original)
+void LC3VMMemoryWindow::Editor(ImVec2 mousePos, char* c, char original)
 {
     std::stringstream ss;
     ImGui::SetNextWindowPos(mousePos);
@@ -468,7 +468,7 @@ void LC3VMMemorywindow::Editor(ImVec2 mousePos, char* c, char original)
     }
 }
 
-uint64_t LC3VMMemorywindow::Char_Array_to_Number(char buf[], size_t numDigits)
+uint64_t LC3VMMemoryWindow::Char_Array_to_Number(char buf[], size_t numDigits)
 {
     // Debug
     // printf("Hex buffer: %s\n", buf);
@@ -507,7 +507,7 @@ uint64_t LC3VMMemorywindow::Char_Array_to_Number(char buf[], size_t numDigits)
     return result;
 }
 
-uint64_t LC3VMMemorywindow::Char_to_Number(char ch)
+uint64_t LC3VMMemoryWindow::Char_to_Number(char ch)
 {
     if (ch >= '0' && ch <= '9')
     {

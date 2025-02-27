@@ -112,7 +112,7 @@ void (*instr_call_table[])(uint16_t) = {
 /* Global variables owned by the VM */
 SDL_Window* window = nullptr;
 SDL_Renderer* renderer = nullptr;
-LC3VMMemorywindow memoryWindow;
+LC3VMMemoryWindow memoryWindow;
 LC3VMdisawindow disaWindow;
 bool keyPressed;
 uint8_t lastKeyPressed;
@@ -195,7 +195,7 @@ int init()
 
     // Memory Window
     WindowConfig memoryWinConfig {true, 20, {864, 720}, {864, 720}, {0, 0}};
-    memoryWindow = LC3VMMemorywindow(memory, (size_t)(MAX_SIZE * 2), memoryWinConfig);
+    memoryWindow = LC3VMMemoryWindow(memory, (size_t)(MAX_SIZE * 2), memoryWinConfig);
     
     // Insturction Cache Window
     WindowConfig disaWinConfig {true, 20, {360, 480}, {360, 480}, {1024, 0}};

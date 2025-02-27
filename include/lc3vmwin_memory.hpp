@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-class LC3VMMemorywindow
+class LC3VMMemoryWindow
 {
 public:
     std::vector<Glyph> buffer;
@@ -27,9 +27,9 @@ public:
     bool addressInputMode;  // For the inputText under the memory content
 
     /* We need a default constructor to write LC3VMMemorywindow window; */
-    LC3VMMemorywindow();
-    LC3VMMemorywindow(uint16_t* memory, size_t memorySize, const WindowConfig& config);
-    ~LC3VMMemorywindow() = default;
+    LC3VMMemoryWindow();
+    LC3VMMemoryWindow(uint16_t* memory, size_t memorySize, const WindowConfig& config);
+    ~LC3VMMemoryWindow() = default;
 
     void Draw();
     void Editor(ImVec2 mousePos, char* c, char original);
