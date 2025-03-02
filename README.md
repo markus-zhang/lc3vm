@@ -126,3 +126,10 @@ New TODOs: To make it a bit more useful, we need to add step-in debugging, other
 
 
 + Next major task: Add a new window for registers
+
++ Figure out how to use the `readonly` flag in lc3vmwin_memory. And clean up the code a bit - at least remove all those unused, buddy
+
+= 2025-03-02
+
+* Figured out a way to use UNION to represent different sizes of registers, so that the Regster Window widget can be a big more general (doesn't care about the reg size of the machine)
+
