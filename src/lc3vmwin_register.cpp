@@ -3,31 +3,27 @@
 #include <sstream>
 #include <iomanip>
 
-LC3VMRegisterWindow::LC3VMRegisterWindow(int externalRegNum, const void* externalRegFile, const char** externalRegNames, int externalRegSize, int exeternalNumRegShownEachLine, const WindowConfig& config)
+
+LC3VMRegisterWindow::LC3VMRegisterWindow(int externalRegNum, const void* externalRegFile, const std::vector<std::string>& externalRegNames, int externalRegSize, int exeternalNumRegShownEachLine, const WindowConfig& config)
 {
     /* Gracefully disable the window if regNum = 0 */
     if (externalRegNum <= 0 || externalRegSize <= 0 || exeternalNumRegShownEachLine <= 0)
     {
         fprintf(stderr, "Function: %s gracely shows you an error message: regNum and regSize and numRegShownEachLine should be natural numbers. \n", __func__);
         disabled = true;
-        regNames = nullptr;
         regNum = 0;
         numRegShownEachLine = 0;
     }
     else
     {
-        if (regNum > sizeof(externalRegFile) / externalRegSize)
-        {
-            fprintf(stderr, "Function: %s gracely shows you an error message: regNum should be equal or smaller than # of elements in regFile. \n", __func__);
-            regNum = sizeof(externalRegFile) / externalRegSize;
-        }
-        if (sizeof(externalRegFile) % externalRegSize != 0)
-        {
-            fprintf(stderr, "Function: %s gracely shows you an error message: number of elements in regFile (%d) should divide regSize (%d). May lose some data at the end. \n", __func__, sizeof(externalRegFile), externalRegSize);
-        }
         disabled = false;
-        regNum = regNum;
-        regNames = regNames;
+        regNum = externalRegNum;
+        regNames.reserve(regNum);
+
+        for (int i = 0; i < regNum; i++)
+        {
+            regNames.push_back(externalRegNames[i]);
+        }
 
         rf.regSize = externalRegSize;
         switch (externalRegSize)
@@ -59,7 +55,9 @@ LC3VMRegisterWindow::LC3VMRegisterWindow(int externalRegNum, const void* externa
                 break;
             }
         }
-        numRegShownEachLine = numRegShownEachLine;
+        numRegShownEachLine = exeternalNumRegShownEachLine;
+
+        
     }
     this->initialWindowSize   = config.initialWindowSize;
     this->minWindowSize       = config.minWindowSize;
@@ -74,35 +72,20 @@ LC3VMRegisterWindow::~LC3VMRegisterWindow()
     rf.u.p16bit = nullptr;
     rf.u.p32bit = nullptr;
     rf.u.p64bit = nullptr;
-    regNames = nullptr;
 }
 
 void LC3VMRegisterWindow::Draw()
 {
+    if (disabled)
+    {
+        printf("Register window disabled\n");
+        return;
+    }
 
     if (!initialized)
     {
         ImGui::SetNextWindowSize(initialWindowSize, 0);
         initialized = true;
-    }
-
-    /*
-        How much space does one register take? Depending on how many bytes we want to show:
-        0x0030 and 0x0000000000000030 definitely are different!
-    */
-    std::string text = "R0:0x";
-    for (int i = 0; i < rf.regSize; i++)
-    {
-        text.push_back('0');
-    }
-    text.push_back('\t');
-    /* Now we have a string like "R0:0x0000\t" to measure the length */
-    ImVec2 textSize = ImGui::CalcTextSize(text.c_str());
-
-    /* If window is not big enough (adding 40 pixels as buffer), reset window */
-    if (initialWindowSize.x <= numRegShownEachLine * textSize.x + 40)
-    {
-        initialWindowSize.x = numRegShownEachLine * textSize.x + 40;
     }
 
     ImGui::GetStyle().WindowBorderSize = 2.0f;
@@ -112,7 +95,7 @@ void LC3VMRegisterWindow::Draw()
     ImGui::Begin(
         "Register Watch Window",
         nullptr,
-        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoBringToFrontOnFocus
+        ImGuiWindowFlags_NoCollapse
     );
 
     /*
@@ -125,28 +108,47 @@ void LC3VMRegisterWindow::Draw()
     int j = 0;
     std::stringstream ss;
     
-    while (i < sizeof(regNames))
+    while (i < regNum)
     {
-        if (i % numRegShownEachLine != 0)
-        {
-            ImGui::SameLine();
-            ImGui::Text("\t");
-            ImGui::SameLine();
-            ImGui::Text(regNames[i++]);
-            ImGui::Text(":");
-            ImGui::SameLine();
-            ss << "0x" << std::hex << std::setfill('0') << std::setw(regSizeInBytes) << (uint64_t)(regFile[i]) << " ";
-            ImGui::
+        ImGui::SetCursorPosX(20.0f);
+        ImGui::SameLine();
+
+        ImGui::Text("%s:", regNames[i].c_str());
+        ImGui::SameLine();
+
+        int regSize = rf.regSize;
+        switch (regSize)
+        {   
+            case 1:
+            {
+                ss << "0x" << std::hex << std::setfill('0') << std::setw(regSize) << (uint8_t)(rf.u.p8bit[i]) << " ";
+                break;
+            }
+            case 2:
+            {
+                ss << "0x" << std::hex << std::setfill('0') << std::setw(regSize) << (uint16_t)(rf.u.p16bit[i]) << " ";
+                break;
+            }
+            case 4:
+            {
+                ss << "0x" << std::hex << std::setfill('0') << std::setw(regSize) << (uint32_t)(rf.u.p32bit[i]) << " ";
+                break;
+            }
+            case 8:
+            {
+                ss << "0x" << std::hex << std::setfill('0') << std::setw(regSize) << (uint64_t)(rf.u.p64bit[i]) << " ";
+                break;
+            }
         }
-        else 
-        {
-            ImGui::Text(regNames[i++]);
-        }
-        
+        std::string regWidget = ss.str();
+        ImGui::Text("%s", regWidget.c_str());
+        ss.str("");
+        ss.clear();
+
+        i += 1;
+        ImGui::NewLine();
     }
 
-    // for (size_t i = 0; /* i < sizeof(regNames)*/  i < numRegShownEachLine; i++)
-    // {
-    //     ImGui::Text(regNames[i]);
-    // }
+    ImGui::PopStyleColor();
+    ImGui::End();
 }

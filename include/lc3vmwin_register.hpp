@@ -40,7 +40,7 @@ public:
     */
     int regNum;
     regFile rf;
-    const char** regNames;
+    std::vector<std::string> regNames;
 
     ImVec2 initialWindowSize;
     ImVec2 minWindowSize;
@@ -52,8 +52,8 @@ public:
     int numRegShownEachLine;
 
     /* Member function lists */
-    LC3VMRegisterWindow() = delete;
-    LC3VMRegisterWindow(int externalRegNum, const void* externalRegFile, const char** externalRegNames, int externalRegSize, int exeternalNumRegShownEachLine, const WindowConfig& config);
+    LC3VMRegisterWindow() = default;
+    LC3VMRegisterWindow(int externalRegNum, const void* externalRegFile, const std::vector<std::string>& externalRegNames, int externalRegSize, int exeternalNumRegShownEachLine, const WindowConfig& config);
     ~LC3VMRegisterWindow();
 
     void Draw();

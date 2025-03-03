@@ -4,6 +4,7 @@
 #include "lc3vmwin_disa.hpp"
 #include "lc3vmwin_loader.hpp"
 #include "lc3vmwin_cache.hpp"
+#include "lc3vmwin_register.hpp"
 
 #include <iostream>
 #include <SDL2/SDL.h>
@@ -114,13 +115,14 @@ SDL_Window* window = nullptr;
 SDL_Renderer* renderer = nullptr;
 LC3VMMemoryWindow memoryWindow;
 LC3VMdisawindow disaWindow;
+LC3VMRegisterWindow regWindow;
 bool keyPressed;
 uint8_t lastKeyPressed;
 struct termios original_tio;
 ImGuiTextBuffer consoleBuffer;
 
 // Registers
-uint16_t reg[R_COUNT];
+uint16_t reg[R_COUNT] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 // RAM
 uint16_t memory[MAX_SIZE] = {0};
 
@@ -200,6 +202,18 @@ int init()
     // Insturction Cache Window
     WindowConfig disaWinConfig {true, 20, {360, 480}, {360, 480}, {1024, 0}};
     disaWindow.Load_Config(disaWinConfig);
+
+	// Register Watch Window
+	WindowConfig regWinConfig {true, 20, {640, 240}, {640, 240}, {320, 880}};
+	/*
+		R_R0 = 0, R_R1, R_R2, R_R3, R_R4, R_R5, R_R6, R_R7,
+		R_PC, 
+		R_COND, 
+	*/
+	int externalRegSize = 2;
+	std::vector<std::string> externalRegNames = {"R0", "R1", "R2", "R3", "R4", "R5", "R6", "R7", "PC", "COND"};
+
+	regWindow = LC3VMRegisterWindow(R_COUNT, reg, externalRegNames, externalRegSize, 4, regWinConfig);
 
     signalQuit = false;
     showQuitConfirm = false;
@@ -303,6 +317,11 @@ void input()
                         isDisa = !isDisa;
                     }
                 }
+				else if (sdlEvent.key.keysym.sym == SDLK_3)
+				{
+					// TODO: Implement toggle. Right now the window cannot be closed
+					regWindow.disabled = !regWindow.disabled;
+				}
 				// Test clear textBuffer
 				else if (sdlEvent.key.keysym.sym == SDLK_0)
                 {
@@ -346,6 +365,9 @@ void sdl_imgui_frame()
     {
         Quit_Confirm(&isRunning, &signalQuit);
     }
+
+	// TODO: make the code more robust here
+	regWindow.Draw();
 
 	/*
 		Test the idea of an ImGui console
