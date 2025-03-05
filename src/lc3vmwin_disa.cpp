@@ -19,6 +19,8 @@ LC3VMdisawindow::LC3VMdisawindow()
 
     font = nullptr;
     initialized = false;
+    stepInSignal = false;
+    stepInLine = 0;
 }
 
 LC3VMdisawindow::LC3VMdisawindow(uint16_t instrStream[], uint16_t numInstr, uint16_t address, const WindowConfig& config)
@@ -87,6 +89,11 @@ void LC3VMdisawindow::Draw(void)
     for (int i = 0; i < numInstructions; i++)
     {
         u_int16_t instr = instructionStream[i];
+        if (i == stepInLine)
+        {
+            ImGui::Text(">>");
+            ImGui::SameLine();
+        }
         ImGui::Text("%#06x\t", initialAddress + i * 2); // each instr is 2 bytes
         ImGui::SameLine();
         ImGui::Text("%#06x\t", instr);

@@ -132,7 +132,6 @@ bool isRunning;
 bool isDebug;
 bool isDisa;
 bool isStepIn;
-bool StepInSignal;
 
 int main()
 {
@@ -220,9 +219,8 @@ int init()
     isRunning = true;
     isDebug = false;
     isDisa = false;
-    // Step in "debugging"
+    // Step in "debugging", should be default as the program loads and runs immediately so there is no time for the user to click the button, yuk!
     isStepIn = true;
-    StepInSignal = false;
 
     return 0;
 }
@@ -356,10 +354,12 @@ void sdl_imgui_frame()
         memoryWindow.Draw();
     }
 
-    if (isDisa)
-    {
-        disaWindow.Draw();
-    }
+    // if (isDisa)
+    // {
+    //     disaWindow.Draw();
+    // }
+
+	disaWindow.Draw();
 
     if (signalQuit)
     {
@@ -581,19 +581,29 @@ void cache_run(struct lc3Cache cache)
 		// ui_debug_info(reg, 25);
 		// Debugging END
 
- 		reg[R_PC] += 1;	
+		if (isStepIn)
+		{
+			/* Regardless of whether the instruction is gonna be executed, we need to mark it with >> */
+			// EXPLAIN: Check the code in lc3vmwin_disa
+			disaWindow.stepInLine = i;
+
+			// EXPLAIN: Only execute if user sends a signal through the disa window
+			if (disaWindow.stepInSignal)
+			{
+				reg[R_PC] += 1;			
+        		instr_call_table[op](instr);
+				disaWindow.stepInSignal = false;
+			}
+			// EXPLAIN: If no signal, then break and return. Since we haven't changed the PC, it should come back to this piece of code
+			else
+			{
+				break;
+			}
+		}
+
+ 		// reg[R_PC] += 1;	
 		
-        instr_call_table[op](instr);
-
-        // Step-in Debugging
-        // if (isStepIn)
-        // {
-        //     // TODO: Must receive a signal from disa window to execute the next instruction
-        //     // while (!StepInSignal)
-        //     // {
-
-        //     // }
-        // }
+        // instr_call_table[op](instr);
 	}
 
 }

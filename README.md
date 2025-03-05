@@ -133,3 +133,14 @@ New TODOs: To make it a bit more useful, we need to add step-in debugging, other
 
 * Figured out a way to use UNION to represent different sizes of registers, so that the Regster Window widget can be a big more general (doesn't care about the reg size of the machine)
 
+= 2025-03-03
+
+* Completed the first version of the register watch window
+
++ Next major task: Add stepin debugging facility (looks like all UI code should live in the disassembler window)
+    + an arrow > in the disassembler window 
+    + step-in and continue button in the disassembler window
+
+= 2025-03-04
+
++ Still working on the step-in debugger. I think I figured out how to stop the execution without holding the whole program

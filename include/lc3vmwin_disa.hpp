@@ -35,6 +35,8 @@ public:
     ImFont* font;
 
     bool initialized;
+    bool stepInSignal;
+    int stepInLine;
 
     LC3VMdisawindow();
     LC3VMdisawindow(uint16_t instrStream[], uint16_t numInstr, uint16_t address, const WindowConfig& config);
