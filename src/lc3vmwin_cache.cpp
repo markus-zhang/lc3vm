@@ -73,20 +73,44 @@ void cache_add(struct lc3Cache c)
 }
 
 
-int cache_find(uint16_t address)
+// int cache_find(uint16_t address)
+// {
+// 	for (uint16_t i = 0; i < cacheCount; i++)
+// 	{
+// 		if (codeCache[i].lc3MemAddress == address)
+// 		{
+// 			return i;
+// 		}
+// 	}
+// 	return -1;
+// }
+
+struct codeLocation cache_find(uint16_t address)
 {
 	for (uint16_t i = 0; i < cacheCount; i++)
 	{
-		if (codeCache[i].lc3MemAddress == address)
+		// if (codeCache[i].lc3MemAddress == address)
+		// {
+		// 	return i;
+		// }
+		if (addressInBlock(address, i))
 		{
-			return i;
+			return {i, address - codeCache[i].lc3MemAddress};
 		}
 	}
-	return -1;
+	return {-1, -1};
 }
 
 
 /* Utility functions */
+
+bool addressInBlock(uint16_t address, uint16_t cacheIndex)
+{
+	return (
+		(address >= codeCache[cacheIndex].lc3MemAddress) && 
+		(address <= codeCache[cacheIndex].lc3MemAddress + codeCache[cacheIndex].numInstr - 1)
+	);
+}
 
 uint8_t get_opcode(uint16_t instr)
 {

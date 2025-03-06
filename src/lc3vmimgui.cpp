@@ -34,7 +34,7 @@ void interpreter_run_test();
 void parse_escape(uint16_t memory[], uint16_t& index);
 void run();
 void shutdown();
-void cache_run(struct lc3Cache cache);
+void cache_run(struct lc3Cache cache, int index);
 void cache_dump(int cacheIndex);
 
 uint16_t read_memory(uint16_t index);
@@ -220,7 +220,7 @@ int init()
     isDebug = false;
     isDisa = false;
     // Step in "debugging", should be default as the program loads and runs immediately so there is no time for the user to click the button, yuk!
-    isStepIn = true;
+    isStepIn = false;
 
     return 0;
 }
@@ -513,8 +513,21 @@ void interpreter_run()
 		}
 
 		uint16_t lc3Address = reg[R_PC];
-		
-		int cacheIndex = cache_find(lc3Address);
+
+		/*
+			FIXME: cache_find should check a range of addresses instead of just checking the address of the first line of the code clock. Otherwise the code creates a new block for each step-in.
+
+			if (codeCache[i].lc3MemAddress == address)
+			{
+				return i;
+			}
+
+			This means we need to pass a parameter about which intruction in the cache code block to be executed. This parameter should have the value of reg[R_PC], which could be in the middle of a code block (Not sure if 2048 has something like jmp <reg> which could jump to any place in the code, need to check)
+		*/
+		// int cacheIndex = cache_find(lc3Address);
+		struct codeLocation loc = cache_find(lc3Address);
+		int cacheIndex = loc.cacheIndex;
+		int codeIndex = loc.codeIndex;
 
 		// if cache not found, then build and insert
 		if (cacheIndex == -1)
@@ -527,12 +540,12 @@ void interpreter_run()
 			{
 				cache_dump(newCacheIndex); 
 			}
-			cache_run(codeCache[newCacheIndex]);
+			cache_run(codeCache[newCacheIndex], 0);
 		}
 		// if found, then execute
 		else
 		{
-			cache_run(codeCache[cacheIndex]);
+			cache_run(codeCache[cacheIndex], codeIndex);
 		}
 	}
 }
@@ -565,14 +578,20 @@ void interpreter_run_test()
 	}
 }
 
-void cache_run(struct lc3Cache cache)
+void cache_run(struct lc3Cache cache, int index)
 {
 	/*
 		cache_run is different from interpreter_run in the sense
 			-> that we don't use PC to find the next instruction but just run sequentially inside of the cache
 			-> We still need to update the PC for the next interpreter_run() call
 	*/
-	for (int i = 0; i < cache.numInstr; i++)
+
+	/*
+		FIXME: For step-in, we need a big fix. We cannot step-in from the first instruction every time we go into this block. Why? Consider this: we step-in once, we are at the second instruction, and then we break from the for loop and return to interpreter_run(). Now we enter the same block again, should we execute from the first instruction again? No we shoud start from the second instruction.
+
+		So what should do is -- we add a parameter in this function, the number of instruction to be executed. If step-in, we increment by 1.
+	*/
+	for (int i = index; i < cache.numInstr; i++)
 	{
 		uint16_t instr = cache.codeBlock[i];	
 		uint16_t op = instr >> 12;
@@ -600,10 +619,11 @@ void cache_run(struct lc3Cache cache)
 				break;
 			}
 		}
-
- 		// reg[R_PC] += 1;	
-		
-        // instr_call_table[op](instr);
+		else
+		{
+ 			reg[R_PC] += 1;	
+        	instr_call_table[op](instr);
+		}
 	}
 
 }

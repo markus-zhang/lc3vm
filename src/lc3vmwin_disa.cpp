@@ -88,18 +88,29 @@ void LC3VMdisawindow::Draw(void)
 
     for (int i = 0; i < numInstructions; i++)
     {
+        // printf("Initial Address: %d\n", initialAddress);
         u_int16_t instr = instructionStream[i];
         if (i == stepInLine)
         {
             ImGui::Text(">>");
             ImGui::SameLine();
         }
-        ImGui::Text("%#06x\t", initialAddress + i * 2); // each instr is 2 bytes
+        // EXPLAIN: Why + i, not + i*2? After all each instr is 2 bytes
+        // The reason is, the VM uses 16-bit addressing so each "1" address has 2 bytes
+        // This is different from the memory window, which uses the standard byte memory addressing
+        // This is also why the address will never execeed 0xFFFF, while the memory window needs double the address space
+        ImGui::Text("%#06x\t", initialAddress + i); 
         ImGui::SameLine();
         ImGui::Text("%#06x\t", instr);
         ImGui::SameLine();
         std::string disaOutput = disa_call_table[instr >> 12](instr, initialAddress);
         ImGui::Text("%s", disaOutput.c_str());
+    }
+
+    /* Add a Continue button to let the code run */
+    if (ImGui::Button("Execution/Step-in"))
+    {
+        stepInSignal = !stepInSignal;
     }
 
     ImGui::End();
