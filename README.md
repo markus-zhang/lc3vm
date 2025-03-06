@@ -144,3 +144,16 @@ New TODOs: To make it a bit more useful, we need to add step-in debugging, other
 = 2025-03-04
 
 + Still working on the step-in debugger. I think I figured out how to stop the execution without holding the whole program
+
+= 2025-03-05
+
+* Step-in beautifully done! This is a major milestone.
+    * Now code caches are generated properly - previously each line of code generates a new block, which is definitely wrong. Now `cache_find()` check whether the line is WITHIN the boudary of the whole block, and return index of cache as well as index of code to the caller function
+    
+    * I also modified cache_run() function so that it takes two parameters, the second one the index of the code, so that it doesn't have to ALWAYS execute from the beginning of the code block -> this is vital for step-ins because if it always executes from code index 0, then it never executes the rest of the code in the block!
+
+    * I also confirmed that non-step-in still works perfectly
+
++ I need to think through what the next step is. I probably need to write more comments and clean things up first
+
++ Figure out how to use the `readonly` flag in lc3vmwin_memory.
