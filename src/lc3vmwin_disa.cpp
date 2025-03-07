@@ -60,17 +60,12 @@ void LC3VMdisawindow::Load(uint16_t instrStream[], uint16_t numInstr, uint16_t a
 }
 
 void LC3VMdisawindow::Draw(void)
-{
-    /*
-        It should show a row of following items for each instruction (uint16_t):
-
-    */
-    
-    if (!initialized)
-    {
-        ImGui::SetNextWindowSize(initialWindowSize, 0);
-        initialized = true;
-    }
+{    
+    // if (!initialized)
+    // {
+    //     ImGui::SetNextWindowSize(initialWindowSize, 0);
+    //     initialized = true;
+    // }
 
     ImGui::GetStyle().WindowBorderSize = 2.0f;
     ImGui::SetNextWindowPos(winPos);
@@ -79,7 +74,8 @@ void LC3VMdisawindow::Draw(void)
     ImGui::Begin(
         "Disassembly Window",
         nullptr,
-        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoBringToFrontOnFocus
+        // ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoBringToFrontOnFocus
+        ImGuiWindowFlags_AlwaysAutoResize
     );
 
     ImGui::Text("Address\t");
@@ -108,7 +104,7 @@ void LC3VMdisawindow::Draw(void)
     }
 
     /* Add a Continue button to let the code run */
-    if (ImGui::Button("Execution/Step-in"))
+    if (ImGui::Button("Step-in"))
     {
         stepInSignal = !stepInSignal;
     }

@@ -34,7 +34,7 @@ void interpreter_run_test();
 void parse_escape(uint16_t memory[], uint16_t& index);
 void run();
 void shutdown();
-void cache_run(struct lc3Cache cache, int index);
+void cache_run(struct lc3Cache cache, int beginIndex);
 void cache_dump(int cacheIndex);
 
 uint16_t read_memory(uint16_t index);
@@ -515,21 +515,19 @@ void interpreter_run()
 		uint16_t lc3Address = reg[R_PC];
 
 		/*
-			FIXME: cache_find should check a range of addresses instead of just checking the address of the first line of the code clock. Otherwise the code creates a new block for each step-in.
+			EXPLAIN: 
+			cache_find() checks a range of addresses instead of just checking the address of the first line of the code clock. Otherwise the code creates a new block for each step-in. Imagine we step-in into line 1 of the code block, we should still step into the same code block instead of creating a new block starting from this line.
 
-			if (codeCache[i].lc3MemAddress == address)
-			{
-				return i;
-			}
-
-			This means we need to pass a parameter about which intruction in the cache code block to be executed. This parameter should have the value of reg[R_PC], which could be in the middle of a code block (Not sure if 2048 has something like jmp <reg> which could jump to any place in the code, need to check)
+			This means we need to pass a parameter about which intruction in the cache code block to be executed.
 		*/
-		// int cacheIndex = cache_find(lc3Address);
+
 		struct codeLocation loc = cache_find(lc3Address);
 		int cacheIndex = loc.cacheIndex;
 		int codeIndex = loc.codeIndex;
 
-		// if cache not found, then build and insert
+		/*
+			EXPLAIN: if cache not found, create, insert and execute from first line, otherwise execute from line codeIndex
+		*/
 		if (cacheIndex == -1)
 		{
 			struct lc3Cache newCache = cache_create_block(memory, lc3Address);
@@ -540,9 +538,9 @@ void interpreter_run()
 			{
 				cache_dump(newCacheIndex); 
 			}
+			// EXPLAIN: if it's a new code block, we ofc execute from line 0 (in this case loc.codeIndex should be -1)
 			cache_run(codeCache[newCacheIndex], 0);
 		}
-		// if found, then execute
 		else
 		{
 			cache_run(codeCache[cacheIndex], codeIndex);
@@ -578,32 +576,34 @@ void interpreter_run_test()
 	}
 }
 
-void cache_run(struct lc3Cache cache, int index)
+void cache_run(struct lc3Cache cache, int beginIndex)
 {
 	/*
-		cache_run is different from interpreter_run in the sense
+		cache_run is different from interpreter_run_test in the sense
 			-> that we don't use PC to find the next instruction but just run sequentially inside of the cache
 			-> We still need to update the PC for the next interpreter_run() call
 	*/
 
 	/*
-		FIXME: For step-in, we need a big fix. We cannot step-in from the first instruction every time we go into this block. Why? Consider this: we step-in once, we are at the second instruction, and then we break from the for loop and return to interpreter_run(). Now we enter the same block again, should we execute from the first instruction again? No we shoud start from the second instruction.
+		EXPLAIN: There are a few reasons that this function has two parameters ->
+			- cache, which is a struct lc3Cache that contains the code block
+			- beginIndex, the index of the code in the code block
+			(e.g. if beginIndex = 5 it means start running from the 6th line of code)
 
-		So what should do is -- we add a parameter in this function, the number of instruction to be executed. If step-in, we increment by 1.
+			Reason 1: Sometimes we don't want to run from the first line of code of the code block, maybe it's because of a jump into the middle of the block
+
+			Reason 2: For step-in, right now the solution is to return the control to the caller if no step-in command has been given (there is a button in Draw() of lc3vmwin_disa.cpp does that, and right now I need to set isStepIn to true at the initialization phase of this program). So the problem is, imagine we just exeucted line 0, now we are sent back to the caller function (interpreter_run()), and we fall into the same code block ofc, then we call cache_run() again, how do we execute line 1 instead of executing line 0 over and over again? By telling cache_run() which line to run, of course.
 	*/
-	for (int i = index; i < cache.numInstr; i++)
+	for (int i = beginIndex; i < cache.numInstr; i++)
 	{
 		uint16_t instr = cache.codeBlock[i];	
 		uint16_t op = instr >> 12;
 
-		// Debuggin BEGIN
-		// ui_debug_info(reg, 25);
-		// Debugging END
-
 		if (isStepIn)
 		{
-			/* Regardless of whether the instruction is gonna be executed, we need to mark it with >> */
-			// EXPLAIN: Check the code in lc3vmwin_disa
+			/* 
+				EXPLAIN: This is to mark the line that is about to run in the code block. Check the Draw() function in lc3vmwin_disa.cpp. Otherwise the disassembly window doesn't know which line should be marked with ">>""
+			*/
 			disaWindow.stepInLine = i;
 
 			// EXPLAIN: Only execute if user sends a signal through the disa window
@@ -611,15 +611,17 @@ void cache_run(struct lc3Cache cache, int index)
 			{
 				reg[R_PC] += 1;			
         		instr_call_table[op](instr);
+				// EXPLAIN: Immediately disable stepInSignal for the next step. If we don't disable then the code continue running
 				disaWindow.stepInSignal = false;
 			}
-			// EXPLAIN: If no signal, then break and return. Since we haven't changed the PC, it should come back to this piece of code
+			// EXPLAIN: If no signal, then break and return. Since we haven't changed the PC, it should come back to this piece of code. NOTE that we CANNOT use an infinite loop to hold execution because the infinite loop would hold the whole program too!
 			else
 			{
 				break;
 			}
 		}
 		else
+		// EXPLAIN: If not step-in, then just execute normally
 		{
  			reg[R_PC] += 1;	
         	instr_call_table[op](instr);
@@ -630,7 +632,9 @@ void cache_run(struct lc3Cache cache, int index)
 
 void cache_dump(int cacheIndex)
 {
-	// printf("--------Dumping Cache No. %d BEGIN--------\n", cacheIndex);
+	/*
+		EXPLAIN: Load the current code block into the disassembly window
+	*/
 	if (cacheIndex >= cacheCount)
 	{
 		printf("Wrong cache index at: %d\n", cacheIndex);
@@ -639,7 +643,6 @@ void cache_dump(int cacheIndex)
 	{
         disaWindow.Load(codeCache[cacheIndex].codeBlock, codeCache[cacheIndex].numInstr, codeCache[cacheIndex].lc3MemAddress);
 	}
-	// printf("--------Dumping Cache No. %d END----------\n", cacheIndex);
 }
 
 /* Op code functions */
@@ -1048,6 +1051,7 @@ void trap_0x22_imgui()
 void parse_escape(uint16_t memory[], uint16_t& index)
 {
     /*
+		EXPLAIN:
         I want to be pragmatic and only deals with the control sequences in 2048
         "\e[37m 2  \e[0m"
         "\e[1;33m1024\e[0m"
@@ -1078,21 +1082,19 @@ void parse_escape(uint16_t memory[], uint16_t& index)
         exit(ERROR_VALUE);
     }
 
-    /* Now if the next char is 2 we just read the whole sequence till the end, and clear buffer */
     ch = read_memory(index++);
     if (ch == '2')
     {
-		// TODO: This loop is probably useless, check whether I can remove it
-        // while (ch != '\0')
-        // {
-        //     // Do nothing, just increment index
-		// 	ch = read_memory(index++);
-		// 	// printf("%c-", ch);
-        // }
+		/*
+			EXPLAIN: if it's 2, then there is actually no need to read the whole sequence because we take it that we are about to clear the screen (in this case clear the ImGui console buffer)
+		*/
         consoleBuffer.clear();
     }
     else
-	// EXPLAIN: if ch != 2 then in 2048 it means it's either 3 or 1 depending on the control sequence (checkout "asni board labels" section in 2048.asm)
+	
+	/* 
+		EXPLAIN: if ch != 2 then in 2048 it means it's either 3 or 1 depending on the control sequence (checkout "ansi board labels" section in 2048.asm)
+	*/
 
     {
         /* So we just need to take the number between m and \e */

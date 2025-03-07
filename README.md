@@ -157,3 +157,7 @@ New TODOs: To make it a bit more useful, we need to add step-in debugging, other
 + I need to think through what the next step is. I probably need to write more comments and clean things up first
 
 + Figure out how to use the `readonly` flag in lc3vmwin_memory.
+
+= 2025-03-06
+
+OK since I have reached a milestone I'm going to put this project on hold for the moment. I could work on additional features but this project has accomplished what it was planned for.

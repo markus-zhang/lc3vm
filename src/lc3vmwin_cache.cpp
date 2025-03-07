@@ -12,7 +12,6 @@ struct lc3Cache codeCache[CACHE_SIZE_MAX];
 struct lc3Cache cache_create_block(uint16_t memory[], uint16_t lc3Address)
 {
 	uint16_t lc3MemAddress = lc3Address;
-	// uint16_t* codeBlock = (uint16_t*)malloc(sizeof(uint16_t) * CODE_BLOCK_SIZE);
 	uint16_t* codeBlock = new uint16_t[CODE_BLOCK_SIZE];
 	if (!codeBlock)
 	{
@@ -23,22 +22,22 @@ struct lc3Cache cache_create_block(uint16_t memory[], uint16_t lc3Address)
 
 	while (true)
 	{
-		// uint16_t lowByte = (memory[lc3Address]) << 8;
-		// uint16_t highByte = memory[(lc3Address + 1)];
-		// uint16_t instr = highByte + lowByte;
-		// // printf("instr is %#06x\n", instr);
-		// // printf("opcode is %#04x\n", instr >> 12);
-		// write_16bit(codeBlock, numInstr, instr);
 		write_16bit(codeBlock, numInstr, memory[lc3Address]);
 		numInstr++;
 		/*
-			find the last lc3Address that is a jump/ret/trap
+			EXPLAIN: 
+			Find the last lc3Address that is a jump/ret/trap. 
+			Code blocks always stop at such instructions.
 		*/
 		if (is_branch(get_opcode(memory[lc3Address])))
 		{
 			break;
 		}
-		/* We already read 2 bytes */
+		/* 
+			EXPLAIN: 
+			Each memory[i] is 16-bit so it is enough to just increment 1, not 2,
+			to fetch the next instruction.
+		*/
 		lc3Address += 1;
 	}
 
@@ -65,7 +64,12 @@ void cache_add(struct lc3Cache c)
 		codeCache[cacheCount] = c;
 		cacheCount++;
 	}
-	// what if we already have CACHE_SIZE_MAX blocks?
+	/* 
+		EXPLAIN:
+		What if we already have CACHE_SIZE_MAX blocks? 
+		Then we simply recycle the last chunk again and again.
+		Bad luck then.
+	*/
 	else
 	{
 		codeCache[CACHE_SIZE_MAX - 1] = c;
@@ -89,11 +93,7 @@ struct codeLocation cache_find(uint16_t address)
 {
 	for (uint16_t i = 0; i < cacheCount; i++)
 	{
-		// if (codeCache[i].lc3MemAddress == address)
-		// {
-		// 	return i;
-		// }
-		if (addressInBlock(address, i))
+		if (address_in_block(address, i))
 		{
 			return {i, address - codeCache[i].lc3MemAddress};
 		}
@@ -104,7 +104,7 @@ struct codeLocation cache_find(uint16_t address)
 
 /* Utility functions */
 
-bool addressInBlock(uint16_t address, uint16_t cacheIndex)
+bool address_in_block(uint16_t address, uint16_t cacheIndex)
 {
 	return (
 		(address >= codeCache[cacheIndex].lc3MemAddress) && 
