@@ -161,3 +161,7 @@ New TODOs: To make it a bit more useful, we need to add step-in debugging, other
 = 2025-03-06
 
 OK since I have reached a milestone I'm going to put this project on hold for the moment. I could work on additional features but this project has accomplished what it was planned for.
+
+= 2025-03-07
+
++ I want to expand the memory editor to an independent product. I included some plans in the .cpp file but of course they are subject to change and expand.
