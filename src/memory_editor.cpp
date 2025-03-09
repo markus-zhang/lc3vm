@@ -6,6 +6,8 @@
     - Users can use keyboard to navigate through the memory area
         - Cursor must use very distinct foreground and background color
             - Is it possible to blink?
+        - Cursor has two indices: Start and End
+            - Everything between the two should have a rect border
 
         - CTRL / SHIFT / ALT + Arrow keys for navigation
             - LEFT for moving the cursor back 1 byte
@@ -46,52 +48,10 @@
     - A readonly toggle (this should make the UI slightly different)
 */
 
-#include <imgui.h>
-#include <vector>
+#include "memory_editor.hpp"
 #include <string>
-#include <cinttypes>
 #include <sstream>
-
-struct Glyph
-{
-    unsigned char ch;
-    int r;
-    int g;
-    int b;
-};
-
-struct WindowConfig
-{
-    bool readOnly;
-    int fontSize;
-    ImVec2 initialWindowSize;
-    ImVec2 minWindowSize;
-    ImVec2 winPos;
-};
-
-class MemoryEditor
-{
-public:
-    /* Size and location */
-    ImVec2 initialWindowSize;
-    ImVec2 minWindowSize;
-    ImVec2 winPos;
-
-    std::vector<Glyph> buffer;
-    uint64_t bufferSize;
-    uint64_t cursorIndex;
-    uint64_t initialAddress;
-
-    bool readOnly;
-    int fontSize;
-
-public:
-    MemoryEditor();
-    MemoryEditor(uint8_t* memory, uint64_t memorySize, const WindowConfig& config);
-    ~MemoryEditor() = default;
-
-    void Draw();
-};
+#include <iomanip>
 
 
 MemoryEditor::MemoryEditor()
@@ -103,15 +63,19 @@ MemoryEditor::MemoryEditor()
     initialWindowSize = {0, 0};
     minWindowSize = {0, 0};
     winPos = {0, 0};
+    cursorStartIndex = 0;
+    cursorEndIndex = 0;
+    initialAddress = 0;
 }
 
-MemoryEditor::MemoryEditor(uint8_t* memory, uint64_t memorySize, const WindowConfig& config)
+MemoryEditor::MemoryEditor(uint8_t* memory, uint64_t memorySize, const ImGuiWindowConfig& config)
 {
     IM_ASSERT(memory != nullptr);
 
     // TODO: Add a warning dialog if memorySize is over 1GB
 
-    buffer = std::vector<Glyph>(memorySize, {0, 255, 255, 255});
+    buffer = std::vector<charGlyph>(memorySize, {0, 255, 255, 255});
+
     bufferSize = memorySize;
 
     for (size_t i = 0; i < bufferSize; i++)
@@ -126,7 +90,8 @@ MemoryEditor::MemoryEditor(uint8_t* memory, uint64_t memorySize, const WindowCon
     minWindowSize       = config.minWindowSize;
     winPos              = config.winPos;
 
-    cursorIndex         = 0;
+    cursorStartIndex    = 0;
+    cursorEndIndex      = 20;
     initialAddress      = 0;
 }
 
@@ -136,113 +101,197 @@ void MemoryEditor::Draw()
     ImGui::SetNextWindowPos(winPos);
     ImGui::SetNextWindowSizeConstraints(minWindowSize, initialWindowSize);
 
-    ImGui::Begin(
-        "Memory Watch Window",
-        nullptr,
-        ImGuiWindowFlags_NoResize
-    );
-
-    /* 
-        EXPLAIN: 
-        Render first row -> each row shows 16 bytes
-        Address    00 01 ... 0F ASCII
+    /*
+        EXPLAIN:
+        I don't know for sure, but looks like we add all lines, rectangles into a draw list
+        https://github.com/WerWolv/ImHex/blob/00cf8ecb18b2024ba375c353ce9680d33512f65a/libs/ImGui/include/imgui_memory_editor.h#L212C9-L212C60
     */
+    ImDrawList* drawList = ImGui::GetForegroundDrawList();
 
-    ImGui::SetCursorPos({20.0f, 20.0f});
-
-    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(0, 255, 0, 255));
-
-    ImGui::Text("Address ");
-    ImGui::SameLine();
-    ImGui::Text(" 00");
-    ImGui::SameLine();
-    ImGui::Text(" 01");
-    ImGui::SameLine();
-    ImGui::Text(" 02");
-    ImGui::SameLine();
-    ImGui::Text(" 03");
-    ImGui::SameLine();
-    ImGui::Text(" 04");
-    ImGui::SameLine();
-    ImGui::Text(" 05");
-    ImGui::SameLine();
-    ImGui::Text(" 06");
-    ImGui::SameLine();
-    ImGui::Text(" 07");
-    ImGui::SameLine();
-    ImGui::Text(" 08");
-    ImGui::SameLine();
-    ImGui::Text(" 09");
-    ImGui::SameLine();
-    ImGui::Text(" 0A");
-    ImGui::SameLine();
-    ImGui::Text(" 0B");
-    ImGui::SameLine();
-    ImGui::Text(" 0C");
-    ImGui::SameLine();
-    ImGui::Text(" 0D");
-    ImGui::SameLine();
-    ImGui::Text(" 0E");
-    ImGui::SameLine();
-    ImGui::Text(" 0F");
-    ImGui::SameLine();
-    ImGui::Text("        ASCII     ");
-
-    ImGui::PopStyleColor();
-    ImGui::SameLine();
-
-    if (ImGui::Button("Page <"))
+    if (ImGui::Begin("Memory Editor Window", nullptr, ImGuiWindowFlags_None))
     {
-        if (initialAddress <= 0x00200)
+
+        /* 
+            EXPLAIN: 
+            Render first row -> each row shows 16 bytes
+            Address    00 01 ... 0F ASCII
+        */
+
+        ImGui::SetCursorPos({20.0f, 20.0f});
+
+        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(0, 255, 0, 255));
+
+        /* 
+            EXPLAIN:
+            This is to get correct Selectable size for each glyph 
+            (note that the length also includes the prefix space)
+        */
+        ImVec2 textSize = ImGui::CalcTextSize(" 00 ");
+
+        ImGui::Text("Address ");
+        ImGui::SameLine();
+        ImGui::Text(" 00");
+        ImGui::SameLine();
+        ImGui::Text(" 01");
+        ImGui::SameLine();
+        ImGui::Text(" 02");
+        ImGui::SameLine();
+        ImGui::Text(" 03");
+        ImGui::SameLine();
+        ImGui::Text(" 04");
+        ImGui::SameLine();
+        ImGui::Text(" 05");
+        ImGui::SameLine();
+        ImGui::Text(" 06");
+        ImGui::SameLine();
+        ImGui::Text(" 07");
+        ImGui::SameLine();
+        ImGui::Text(" 08");
+        ImGui::SameLine();
+        ImGui::Text(" 09");
+        ImGui::SameLine();
+        ImGui::Text(" 0A");
+        ImGui::SameLine();
+        ImGui::Text(" 0B");
+        ImGui::SameLine();
+        ImGui::Text(" 0C");
+        ImGui::SameLine();
+        ImGui::Text(" 0D");
+        ImGui::SameLine();
+        ImGui::Text(" 0E");
+        ImGui::SameLine();
+        ImGui::Text(" 0F");
+        ImGui::SameLine();
+        /*
+            EXPLAIN:
+            Get the Cursor X to draw the last line of ASCII if bufferSize does not divide 16,
+            in that case we need to move Cursor X to the same X position
+        */
+        ImVec2 asciiPos = ImGui::GetCursorScreenPos();
+        ImGui::Text("        ASCII     ");
+
+        ImGui::PopStyleColor();
+        ImGui::SameLine();
+
+        if (ImGui::Button("Page <"))
+        {
+            if (initialAddress <= 0x00200)
+            {
+                initialAddress = 0x00000;
+            }
+            else
+            {
+                initialAddress -= 0x200;
+            }
+        }
+
+        ImGui::SameLine();
+        if (ImGui::Button("Page <<"))
         {
             initialAddress = 0x00000;
         }
-        else
-        {
-            initialAddress -= 0x200;
-        }
-    }
 
-    ImGui::SameLine();
-    if (ImGui::Button("Page <<"))
-    {
-        initialAddress = 0x00000;
-    }
+        // Render memory glyphs
 
-    // Render memory glyphs
+        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 255, 255, 255));
 
-    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 255, 255, 255));
+        std::stringstream ss;
 
-    std::stringstream ss;
-
-    /* 
-        EXPLAIN:
-        This is to get correct Selectable size for each glyph 
-        (note that the length also includes the prefix space)
-    */
-    ImVec2 textSize = ImGui::CalcTextSize(" 00");
-
-    /*
-        EXPLAIN:
-        We need quite a few explanations for the drawing of the glyphs themselves
-
-        1. We only render 512 InputText each frame (32 rows * 16 bytes per row)
-
-        2. For each byte, we need to PushID(i) to avoid conflict IDs, and PopID() at the end
-
-        FIXME: THIS IS JUST A TEST
-        3. Header byte of each row is rendered in different color. 
-    */
-    for (size_t i = initialAddress; i < initialAddress + 32 * 16; i++)
-    {
         /*
-            Starting from initialAddress, we only render 512 selectables each frame
+            EXPLAIN:
+            We need quite a few explanations for the drawing of the glyphs themselves
+
+            1. We only render 512 InputText each frame (32 rows * 16 bytes per row)
+
+            2. For each byte, we need to PushID(i) to avoid conflict IDs, and PopID() at the end
+
+            FIXME: THIS IS JUST A TEST
+            3. Header byte of each row is rendered in different color. 
         */
 
-        // PushID() to avoid conflict IDs
-        ImGui::PushID(i);
+        for (size_t i = initialAddress; i < initialAddress + bufferSize; i++)
+        {
+            /*
+                Starting from initialAddress, we only render 512 selectables each frame
+            */
 
+            // PushID() to avoid conflict IDs
+            ImGui::PushID(i);
 
-        ImGui::PopID();
+            // Header
+            if (i % 16 == 0)
+            {
+                ImGui::SetCursorPosX(20.0f);
+                ss << "0x" << std::hex << std::setfill('0') << std::setw(5) << static_cast<int>(i) << " ";
+                std::string header = ss.str();
+                ImGui::Text("%s", header.c_str());
+                ss.str("");
+                ss.clear();
+                ImGui::SameLine();
+            }
+
+            /*
+                EXPLAIN:
+                This is how we record the start and end cursor indices
+            */
+
+            if (i >= cursorStartIndex && i <= cursorEndIndex)
+            {
+                ImGui::SameLine();
+                ImVec2 cursorPosUpperLeft = ImGui::GetCursorScreenPos();
+                ImVec2 cursorPosLowerRight = ImVec2(cursorPosUpperLeft.x + textSize.x, cursorPosUpperLeft.y + textSize.y);
+                // Some sort of light blue rectangle
+                drawList->AddRect(cursorPosUpperLeft, cursorPosLowerRight, IM_COL32(147, 181, 196, 255));
+                ImGui::SameLine();
+            }
+            
+            // if (i == cursorEndIndex)
+            // {
+            //     ImGui::SameLine();
+            //     ImVec2 cursorPosUpperLeft = ImGui::GetCursorScreenPos();
+            //     ImVec2 cursorPosLowerRight = ImVec2(cursorPosUpperLeft.x + textSize.x * 2, cursorPosUpperLeft.y + textSize.y);
+            //     // Some sort of light blue rectangle
+            //     drawList->AddRect(cursorPosUpperLeft, cursorPosLowerRight, IM_COL32(147, 181, 196, 255));
+            //     ImGui::SameLine();
+            // }
+
+            ss << ' ' << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buffer[i].ch);
+            std::string byteHex = ss.str();
+            ImGui::Text("%s", byteHex.c_str());
+            ss.str("");
+            ss.clear();
+
+            ImGui::SameLine();
+
+            /*
+                EXPLAIN:
+                If bufferSize cannot be divided by 16 (e.g. 60 bytes, so the last row is ),
+                we need to move the cursor (as the cursor is not at the ASCII position)
+            */
+
+            if (i % 16 == 15 || i == initialAddress + bufferSize - 1)
+            {
+                ImVec2 moveToASCIIPos = ImVec2(asciiPos.x, ImGui::GetCursorScreenPos().y);
+                ImGui::SetCursorPos(moveToASCIIPos);
+                ImGui::Text(" ");
+                int leftIndex = (i / 16) * 16;
+                for (size_t j = leftIndex; j <= i; j++)
+                {
+                    char ascii = buffer[j].ch;
+                    ss << (std::isprint(ascii) ? ascii : '.');
+                }
+                ImGui::SameLine();
+                std::string asciiString = ss.str();
+                ImGui::Text("%s", asciiString.c_str());
+                ss.str("");
+                ss.clear();
+            }
+
+            ImGui::PopID();
+        }
+
+        ImGui::PopStyleColor();
     }
+
+    ImGui::End();
 }

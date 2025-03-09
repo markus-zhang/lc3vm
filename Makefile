@@ -13,7 +13,7 @@ CXXFLAGS := -Wall -Wfatal-errors -Wconversion -Wsign-conversion -pedantic-errors
 CXXFLAGS_LIB = -g -O0 -std=c++17
 
 # Source files
-SRC_FILES := $(wildcard $(SRC_DIR)/lc3vmwin_*.cpp)
+SRC_FILES := $(wildcard $(SRC_DIR)/lc3vmwin_*.cpp) $(SRC_DIR)/memory_editor.cpp
 IMGUI_FILES := $(wildcard $(IMGUI_DIR)/*.cpp)
 
 # Object files

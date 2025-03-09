@@ -6,6 +6,9 @@
 #include "lc3vmwin_cache.hpp"
 #include "lc3vmwin_register.hpp"
 
+// FIXME: Just for testing memory editor, remove afterwards
+#include "memory_editor.hpp"
+
 #include <iostream>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
@@ -116,6 +119,10 @@ SDL_Renderer* renderer = nullptr;
 LC3VMMemoryWindow memoryWindow;
 LC3VMdisawindow disaWindow;
 LC3VMRegisterWindow regWindow;
+
+// FIXME: Just for testing memory editor, remove afterwards
+MemoryEditor me;
+
 bool keyPressed;
 uint8_t lastKeyPressed;
 struct termios original_tio;
@@ -193,6 +200,11 @@ int init()
     ImGui::CreateContext();
     ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
     ImGui_ImplSDLRenderer2_Init(renderer);
+
+	// FIXME: Just for testing memory editor, remove afterwards
+	ImGuiWindowConfig memoryEditorConfig {true, 20, {864, 720}, {864, 720}, {0, 0}};
+	uint8_t testString[] = "abcdefghijklmnopqrstuvmxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	me = MemoryEditor(testString, 53, memoryEditorConfig);
 
     // Memory Window
     WindowConfig memoryWinConfig {true, 20, {864, 720}, {864, 720}, {0, 0}};
@@ -376,6 +388,10 @@ void sdl_imgui_frame()
 	{
 		ImGui::TextUnformatted(consoleBuffer.begin());
 	}
+
+	// FIXME: Just for testing memory editor, remove afterwards
+	me.Draw();
+
 	ImGui::End();
 
     ImGui::Render();

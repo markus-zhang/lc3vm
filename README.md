@@ -165,3 +165,11 @@ OK since I have reached a milestone I'm going to put this project on hold for th
 = 2025-03-07
 
 + I want to expand the memory editor to an independent product. I included some plans in the .cpp file but of course they are subject to change and expand.
+
+= 2025-03-09
+
+* Basic requirement analysis done
+
+* I have a basic memory editor UI working. I particularly like how I can highlight the cells that are supposed to be "selected" (right now I hardcode cell 0 to 20 to be selected, just for a test)
+
++ Optional, but figure out how to make the rectangle contigous (no border between)
