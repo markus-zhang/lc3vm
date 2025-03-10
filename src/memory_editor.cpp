@@ -91,7 +91,7 @@ MemoryEditor::MemoryEditor(uint8_t* memory, uint64_t memorySize, const ImGuiWind
     winPos              = config.winPos;
 
     cursorStartIndex    = 0;
-    cursorEndIndex      = 20;
+    cursorEndIndex      = 0;
     initialAddress      = 0;
 }
 
@@ -205,17 +205,18 @@ void MemoryEditor::Draw()
 
             2. For each byte, we need to PushID(i) to avoid conflict IDs, and PopID() at the end
 
-            FIXME: THIS IS JUST A TEST
+            TODO: THIS IS JUST A TEST
             3. Header byte of each row is rendered in different color. 
         */
 
         for (size_t i = initialAddress; i < initialAddress + bufferSize; i++)
         {
             /*
-                Starting from initialAddress, we only render 512 selectables each frame
+                Starting from initialAddress, we only render a max of 512 bytes each frame - 
+                This is 16 bytes per row * 32 rows hardcoded
             */
 
-            // PushID() to avoid conflict IDs
+            // EXPLAIN: PushID() to avoid conflict IDs
             ImGui::PushID(i);
 
             // Header
@@ -232,11 +233,13 @@ void MemoryEditor::Draw()
 
             /*
                 EXPLAIN:
-                This is how we record the start and end cursor indices
+                This is how we render the rectangles for "selected" cells.
+                Basically every cell within the cursor range should be "selected"
             */
 
             if (i >= cursorStartIndex && i <= cursorEndIndex)
             {
+                // TODO: Switch the background and foreground colors of the cells "selected"
                 ImGui::SameLine();
                 ImVec2 cursorPosUpperLeft = ImGui::GetCursorScreenPos();
                 ImVec2 cursorPosLowerRight = ImVec2(cursorPosUpperLeft.x + textSize.x, cursorPosUpperLeft.y + textSize.y);
@@ -244,16 +247,6 @@ void MemoryEditor::Draw()
                 drawList->AddRect(cursorPosUpperLeft, cursorPosLowerRight, IM_COL32(147, 181, 196, 255));
                 ImGui::SameLine();
             }
-            
-            // if (i == cursorEndIndex)
-            // {
-            //     ImGui::SameLine();
-            //     ImVec2 cursorPosUpperLeft = ImGui::GetCursorScreenPos();
-            //     ImVec2 cursorPosLowerRight = ImVec2(cursorPosUpperLeft.x + textSize.x * 2, cursorPosUpperLeft.y + textSize.y);
-            //     // Some sort of light blue rectangle
-            //     drawList->AddRect(cursorPosUpperLeft, cursorPosLowerRight, IM_COL32(147, 181, 196, 255));
-            //     ImGui::SameLine();
-            // }
 
             ss << ' ' << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buffer[i].ch);
             std::string byteHex = ss.str();
@@ -291,6 +284,101 @@ void MemoryEditor::Draw()
         }
 
         ImGui::PopStyleColor();
+    }
+
+    /* 
+        TODO: Implement keypress
+        Check this piece of code for reference:
+        https://github.com/WerWolv/ImHex/blob/00cf8ecb18b2024ba375c353ce9680d33512f65a/libs/ImGui/include/imgui_memory_editor.h#L260
+    */
+
+    if (ImGui::IsWindowFocused())
+    {   
+        if (ImGui::IsKeyDown(ImGuiKey_LeftCtrl))
+        {
+            if (ImGui::IsKeyPressed(ImGuiKey_RightArrow))
+            {
+                // Move cursorStartIndex to the end of the row
+                uint64_t cursorStartIndexTemp = ((cursorStartIndex & 0xFFFFFFFFFFFFFFF0) | 0x0F);
+                if (cursorStartIndex >= bufferSize - 1)
+                {
+                    cursorStartIndex = bufferSize - 1;
+                }
+                else
+                {
+                    cursorStartIndex = cursorStartIndexTemp;
+                }
+                cursorEndIndex = cursorStartIndex;
+            }
+            else if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow))
+            {
+                // Move cursorStartIndex to the beginning of the row
+                cursorStartIndex = (cursorStartIndex & 0xFFFFFFFFFFFFFFF0);
+                cursorEndIndex = cursorStartIndex;
+            }
+        }
+        else if (ImGui::IsKeyDown(ImGuiKey_LeftShift))
+        {
+            if (ImGui::IsKeyPressed(ImGuiKey_RightArrow))
+            {
+                // Move cursorEndIndex to the end of the row
+                uint64_t cursorEndIndexTemp = ((cursorEndIndex & 0xFFFFFFFFFFFFFFF0) | 0x0F);
+                if (cursorEndIndexTemp >= bufferSize - 1)
+                {
+                    cursorEndIndexTemp = bufferSize - 1;
+                }
+                else
+                {
+                    cursorEndIndex = cursorEndIndexTemp;
+                }
+            }
+            else if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow))
+            {
+                // Move cursorStartIndex to the beginning of the row
+                cursorStartIndex = (cursorStartIndex & 0xFFFFFFFFFFFFFFF0);
+            }
+        }
+        else if (ImGui::IsKeyPressed(ImGuiKey_RightArrow))
+        {
+            if (cursorStartIndex < bufferSize - 1)
+            {
+                cursorStartIndex += 1;
+            }
+            cursorEndIndex = cursorStartIndex;
+        }
+        else if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow))
+        {
+            if (cursorStartIndex > 0)
+            {
+                cursorStartIndex -= 1;
+            }
+            cursorEndIndex = cursorStartIndex;
+        }
+        else if (ImGui::IsKeyPressed(ImGuiKey_DownArrow))
+        {
+            if (cursorStartIndex + 16 <= bufferSize - 1)
+            {
+                cursorStartIndex += 16;
+            }
+            else
+            {
+                cursorStartIndex = bufferSize - 1;
+            }
+            cursorEndIndex = cursorStartIndex;
+        }
+        else if (ImGui::IsKeyPressed(ImGuiKey_UpArrow))
+        {
+            if (cursorStartIndex - 16 >= 0)
+            {
+                cursorStartIndex -= 16;
+            }
+            else
+            {
+                cursorStartIndex = 0;
+            }
+            cursorEndIndex = cursorStartIndex;
+        }
+        
     }
 
     ImGui::End();
