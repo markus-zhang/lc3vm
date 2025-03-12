@@ -177,3 +177,5 @@ OK since I have reached a milestone I'm going to put this project on hold for th
 = 2025-03-11
 
 * CTRL+SHIFT+ARROW implemented
+
+* UP and DOWN ARROWs implemented

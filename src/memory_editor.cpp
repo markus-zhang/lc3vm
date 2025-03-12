@@ -411,8 +411,7 @@ void MemoryEditor::Draw()
                 If possible, go down one row to the same column, otherwise go to the last cell
                 Exception: if we are already at the last row, DON'T go to the last cell, it feels weird
             */
-            uint64_t cursorRowLastCell = cursorStartIndex | 0x0F;
-            if (cursorRowLastCell != (bufferSize - 1))
+            if ((cursorStartIndex | 0x0F) != ((bufferSize - 1) | 0x0F))
             {
                 uint64_t cursorStartIndexTemp = cursorStartIndex + 16;
                 if (cursorStartIndexTemp > bufferSize - 1)
@@ -429,15 +428,19 @@ void MemoryEditor::Draw()
             /*
                 EXPLAIN:
                 If possible, go up one row to the same column, otherwise go to the first cell
+                Exception: if we are already at the first row, DON'T go to the first cell, it feels weird
             */
             
-            uint64_t cursorStartIndexTemp = cursorStartIndex - 16;
-            if (cursorStartIndexTemp < 0)
+            if (cursorStartIndex > 0x0F)
             {
-                cursorStartIndexTemp = 0;
+                uint64_t cursorStartIndexTemp = cursorStartIndex - 16;
+                if (cursorStartIndexTemp < 0)
+                {
+                    cursorStartIndexTemp = 0;
+                }
+                cursorStartIndex = cursorStartIndexTemp;
+                cursorEndIndex = cursorStartIndex;
             }
-            cursorStartIndex = cursorStartIndexTemp;
-            cursorEndIndex = cursorStartIndex;
         }
 
         // if (ImGui::IsKeyDown(ImGuiKey_LeftCtrl))
