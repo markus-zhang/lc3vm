@@ -173,3 +173,7 @@ OK since I have reached a milestone I'm going to put this project on hold for th
 * I have a basic memory editor UI working. I particularly like how I can highlight the cells that are supposed to be "selected" (right now I hardcode cell 0 to 20 to be selected, just for a test)
 
 + Optional, but figure out how to make the rectangle contigous (no border between)
+
+= 2025-03-11
+
+* CTRL+SHIFT+ARROW implemented

@@ -235,9 +235,14 @@ void MemoryEditor::Draw()
                 EXPLAIN:
                 This is how we render the rectangles for "selected" cells.
                 Basically every cell within the cursor range should be "selected"
+                
+                StartIndex is not necessarily <= EndIndex
             */
+            
+            uint64_t cursorMinIndex = (cursorStartIndex <= cursorEndIndex ? cursorStartIndex : cursorEndIndex);
+            uint64_t cursorMaxIndex = (cursorStartIndex <= cursorEndIndex ? cursorEndIndex : cursorStartIndex);
 
-            if (i >= cursorStartIndex && i <= cursorEndIndex)
+            if (i >= cursorMinIndex && i <= cursorMaxIndex)
             {
                 // TODO: Switch the background and foreground colors of the cells "selected"
                 ImGui::SameLine();
@@ -293,91 +298,232 @@ void MemoryEditor::Draw()
     */
 
     if (ImGui::IsWindowFocused())
-    {   
+    {
+        bool isCtrlDown = false;
+        bool isShiftDown = false;
+        // TODO: Use flags isCtrlDown and isShiftDown
         if (ImGui::IsKeyDown(ImGuiKey_LeftCtrl))
         {
-            if (ImGui::IsKeyPressed(ImGuiKey_RightArrow))
+            isCtrlDown = true;
+        }
+
+        if (ImGui::IsKeyDown(ImGuiKey_LeftShift))
+        {
+            isShiftDown = true;
+        }
+
+        if (ImGui::IsKeyPressed(ImGuiKey_RightArrow))
+        {
+            /* CTRL + SHIFT + RIGHT ARROW for contiguous selection towards the end of row */
+            if (isCtrlDown && isShiftDown)
             {
-                // Move cursorStartIndex to the end of the row
-                uint64_t cursorStartIndexTemp = ((cursorStartIndex & 0xFFFFFFFFFFFFFFF0) | 0x0F);
-                if (cursorStartIndex >= bufferSize - 1)
+                cursorEndIndex = cursorEndIndex | 0x0F;
+            }
+            /* CTRL + RIGHT ARROW for jumping to end of row */
+            else if (isCtrlDown)
+            {
+                uint64_t cursorStartIndexTemp = cursorStartIndex | 0x0F;
+                /* EXPLAIN: Check for last row that has less than 16 cells */
+                if (cursorStartIndexTemp > bufferSize - 1)
                 {
-                    cursorStartIndex = bufferSize - 1;
+                    cursorStartIndexTemp = bufferSize - 1;
                 }
-                else
-                {
-                    cursorStartIndex = cursorStartIndexTemp;
-                }
+                cursorStartIndex = cursorStartIndexTemp;
                 cursorEndIndex = cursorStartIndex;
             }
-            else if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow))
+            /* 
+                EXPLAIN:
+                SHIFT + RIGHT ARROW for contiguous selection with the next address
+            */
+            else if (isShiftDown)
             {
-                // Move cursorStartIndex to the beginning of the row
-                cursorStartIndex = (cursorStartIndex & 0xFFFFFFFFFFFFFFF0);
+                /*
+                    EXPLAIN:
+                    Reset cursorEndIndex in case there are cells already selected
+                */
+                // cursorEndIndex = cursorStartIndex;
+                if (cursorEndIndex < bufferSize - 1)
+                {
+                    cursorEndIndex++;
+                }
+            }
+            /* ARROW for moving the cursor */
+            else
+            {
+                if (cursorEndIndex < bufferSize - 1)
+                {
+                    cursorStartIndex++;
+                    cursorEndIndex = cursorStartIndex;
+                }
+            }
+        }
+
+        if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow))
+        {
+            /* 
+                EXPLAIN: 
+                CTRL + SHIFT + LEFT ARROW for contiguous selection towards the end of row 
+                NOTE: always fix cursorStartIndex and move cursorEndIndex
+            */
+            if (isCtrlDown && isShiftDown)
+            {
+                cursorEndIndex &= (uint64_t)0xFFFFFFFFFFFFFFF0;
+            }
+            /* 
+                EXPLAIN: 
+                CTRL + LEFT ARROW for jumping to the first cell of row 
+            */
+            else if (isCtrlDown)
+            {
+                cursorStartIndex &= (uint64_t)0xFFFFFFFFFFFFFFF0;
+                cursorEndIndex = cursorStartIndex;
+            }
+            /* 
+                EXPLAIN: 
+                SHIFT + LEFT ARROW for contiguous selection with the previous address 
+                NOTE: always fix cursorStartIndex and move cursorEndIndex
+            */
+            else if (isShiftDown)
+            {
+                if (cursorEndIndex > 0)
+                {
+                    cursorEndIndex--;
+                }
+            }
+            /* 
+                EXPLAIN: 
+                LEFT ARROW for moving the cursor to the previous address 
+            */
+            else
+            {
+                if (cursorEndIndex > 0)
+                {
+                    cursorStartIndex--;
+                    cursorEndIndex = cursorStartIndex;
+                }
+            }
+        }
+
+        if (ImGui::IsKeyPressed(ImGuiKey_DownArrow))
+        {
+            /*
+                EXPLAIN:
+                If possible, go down one row to the same column, otherwise go to the last cell
+                Exception: if we are already at the last row, DON'T go to the last cell, it feels weird
+            */
+            uint64_t cursorRowLastCell = cursorStartIndex | 0x0F;
+            if (cursorRowLastCell != (bufferSize - 1))
+            {
+                uint64_t cursorStartIndexTemp = cursorStartIndex + 16;
+                if (cursorStartIndexTemp > bufferSize - 1)
+                {
+                    cursorStartIndexTemp = bufferSize - 1;
+                }
+                cursorStartIndex = cursorStartIndexTemp;
                 cursorEndIndex = cursorStartIndex;
             }
         }
-        else if (ImGui::IsKeyDown(ImGuiKey_LeftShift))
+
+        if (ImGui::IsKeyPressed(ImGuiKey_UpArrow))
         {
-            if (ImGui::IsKeyPressed(ImGuiKey_RightArrow))
+            /*
+                EXPLAIN:
+                If possible, go up one row to the same column, otherwise go to the first cell
+            */
+            
+            uint64_t cursorStartIndexTemp = cursorStartIndex - 16;
+            if (cursorStartIndexTemp < 0)
             {
-                // Move cursorEndIndex to the end of the row
-                uint64_t cursorEndIndexTemp = ((cursorEndIndex & 0xFFFFFFFFFFFFFFF0) | 0x0F);
-                if (cursorEndIndexTemp >= bufferSize - 1)
-                {
-                    cursorEndIndexTemp = bufferSize - 1;
-                }
-                else
-                {
-                    cursorEndIndex = cursorEndIndexTemp;
-                }
+                cursorStartIndexTemp = 0;
             }
-            else if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow))
-            {
-                // Move cursorStartIndex to the beginning of the row
-                cursorStartIndex = (cursorStartIndex & 0xFFFFFFFFFFFFFFF0);
-            }
-        }
-        else if (ImGui::IsKeyPressed(ImGuiKey_RightArrow))
-        {
-            if (cursorStartIndex < bufferSize - 1)
-            {
-                cursorStartIndex += 1;
-            }
+            cursorStartIndex = cursorStartIndexTemp;
             cursorEndIndex = cursorStartIndex;
         }
-        else if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow))
-        {
-            if (cursorStartIndex > 0)
-            {
-                cursorStartIndex -= 1;
-            }
-            cursorEndIndex = cursorStartIndex;
-        }
-        else if (ImGui::IsKeyPressed(ImGuiKey_DownArrow))
-        {
-            if (cursorStartIndex + 16 <= bufferSize - 1)
-            {
-                cursorStartIndex += 16;
-            }
-            else
-            {
-                cursorStartIndex = bufferSize - 1;
-            }
-            cursorEndIndex = cursorStartIndex;
-        }
-        else if (ImGui::IsKeyPressed(ImGuiKey_UpArrow))
-        {
-            if (cursorStartIndex - 16 >= 0)
-            {
-                cursorStartIndex -= 16;
-            }
-            else
-            {
-                cursorStartIndex = 0;
-            }
-            cursorEndIndex = cursorStartIndex;
-        }
+
+        // if (ImGui::IsKeyDown(ImGuiKey_LeftCtrl))
+        // {
+        //     if (ImGui::IsKeyPressed(ImGuiKey_RightArrow))
+        //     {
+        //         // Move cursorStartIndex to the end of the row
+        //         uint64_t cursorStartIndexTemp = ((cursorStartIndex & 0xFFFFFFFFFFFFFFF0) | 0x0F);
+        //         if (cursorStartIndex >= bufferSize - 1)
+        //         {
+        //             cursorStartIndex = bufferSize - 1;
+        //         }
+        //         else
+        //         {
+        //             cursorStartIndex = cursorStartIndexTemp;
+        //         }
+        //         cursorEndIndex = cursorStartIndex;
+        //     }
+        //     else if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow))
+        //     {
+        //         // Move cursorStartIndex to the beginning of the row
+        //         cursorStartIndex = (cursorStartIndex & 0xFFFFFFFFFFFFFFF0);
+        //         cursorEndIndex = cursorStartIndex;
+        //     }
+        // }
+        // else if (ImGui::IsKeyDown(ImGuiKey_LeftShift))
+        // {
+        //     if (ImGui::IsKeyPressed(ImGuiKey_RightArrow))
+        //     {
+        //         // Move cursorEndIndex to the end of the row
+        //         uint64_t cursorEndIndexTemp = ((cursorEndIndex & 0xFFFFFFFFFFFFFFF0) | 0x0F);
+        //         if (cursorEndIndexTemp >= bufferSize - 1)
+        //         {
+        //             cursorEndIndexTemp = bufferSize - 1;
+        //         }
+        //         else
+        //         {
+        //             cursorEndIndex = cursorEndIndexTemp;
+        //         }
+        //     }
+        //     else if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow))
+        //     {
+        //         // Move cursorStartIndex to the beginning of the row
+        //         cursorStartIndex = (cursorStartIndex & 0xFFFFFFFFFFFFFFF0);
+        //     }
+        // }
+        // else if (ImGui::IsKeyPressed(ImGuiKey_RightArrow))
+        // {
+        //     if (cursorStartIndex < bufferSize - 1)
+        //     {
+        //         cursorStartIndex += 1;
+        //     }
+        //     cursorEndIndex = cursorStartIndex;
+        // }
+        // else if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow))
+        // {
+        //     if (cursorStartIndex > 0)
+        //     {
+        //         cursorStartIndex -= 1;
+        //     }
+        //     cursorEndIndex = cursorStartIndex;
+        // }
+        // else if (ImGui::IsKeyPressed(ImGuiKey_DownArrow))
+        // {
+        //     if (cursorStartIndex + 16 <= bufferSize - 1)
+        //     {
+        //         cursorStartIndex += 16;
+        //     }
+        //     else
+        //     {
+        //         cursorStartIndex = bufferSize - 1;
+        //     }
+        //     cursorEndIndex = cursorStartIndex;
+        // }
+        // else if (ImGui::IsKeyPressed(ImGuiKey_UpArrow))
+        // {
+        //     if (cursorStartIndex - 16 >= 0)
+        //     {
+        //         cursorStartIndex -= 16;
+        //     }
+        //     else
+        //     {
+        //         cursorStartIndex = 0;
+        //     }
+        //     cursorEndIndex = cursorStartIndex;
+        // }
         
     }
 
