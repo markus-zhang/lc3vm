@@ -206,9 +206,6 @@ void MemoryEditor::Draw()
             1. We only render 512 InputText each frame (32 rows * 16 bytes per row)
 
             2. For each byte, we need to PushID(i) to avoid conflict IDs, and PopID() at the end
-
-            TODO: THIS IS JUST A TEST
-            3. Header byte of each row is rendered in different color. 
         */
 
         for (size_t i = initialAddress; i < initialAddress + bufferSize; i++)

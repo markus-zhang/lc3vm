@@ -6,6 +6,8 @@
 !/src/*.cpp
 !/src/*.hpp
 !/src/*.asm
+!/src/memory_editor
+!/src/memory_editor/*.cpp
 
 # add back other folders
 !/assets/
@@ -13,6 +15,8 @@
 !/libs/**
 !/include/
 !/include/*.hpp
+!/include/memory_editor
+!/include/memory_editor/*.hpp
 
 # add back binary
 !*.obj

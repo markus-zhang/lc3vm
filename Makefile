@@ -1,6 +1,8 @@
 # Directories
 SRC_DIR := src
+SRC_DIR_MEMORY_EDITOR := src/memory_editor
 INCLUDE_DIR := include
+INCLUDE_DIR_MEMORY_EDITOR := include/memory_editor
 IMGUI_DIR := libs/imgui
 BUILD_DIR := build
 
