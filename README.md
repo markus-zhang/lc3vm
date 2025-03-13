@@ -187,3 +187,7 @@ OK since I have reached a milestone I'm going to put this project on hold for th
 * Fixed an overflow issue by switching to int64_t
 
 * ASCII rectangels implemented
+
+* Different colors for highlighted characters, both in HEX and in ASCII
+
++ Need to load a different font to display Unicode such as visible space `␣`

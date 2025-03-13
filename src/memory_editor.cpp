@@ -248,14 +248,31 @@ void MemoryEditor::Draw()
                 ImGui::SameLine();
                 ImVec2 cursorPosUpperLeft = ImGui::GetCursorScreenPos();
                 ImVec2 cursorPosLowerRight = ImVec2(cursorPosUpperLeft.x + textSize.x, cursorPosUpperLeft.y + textSize.y);
-                // Some sort of light blue rectangle
-                drawList->AddRect(cursorPosUpperLeft, cursorPosLowerRight, IM_COL32(147, 181, 196, 255));
+                /* 
+                    TODO: 
+                    Figure out a way to draw contiguous rectangle instead of a lot of small rectangles
+                    - We probably need to use cursorMinIndex and cursorMaxIndex
+                    - What if we need to draw multiple lines?
+                    - Actually, for the first cell of second row, how do we draw a cell without both left and right borders?
+                */
+                drawList->AddRectFilled(cursorPosUpperLeft, cursorPosLowerRight, IM_COL32(125, 175, 175, 100));
                 ImGui::SameLine();
             }
 
             ss << ' ' << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buffer[i].ch);
             std::string byteHex = ss.str();
-            ImGui::Text("%s", byteHex.c_str());
+            
+            // EXPLAIN: We use a light green color for rectangles so text should be yellow
+            if (i >= cursorMinIndex && i <= cursorMaxIndex)
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 255, 0, 255));
+                ImGui::Text("%s", byteHex.c_str());
+                ImGui::PopStyleColor();
+            }
+            else
+            {
+                ImGui::Text("%s", byteHex.c_str());
+            }
             ss.str("");
             ss.clear();
 
@@ -280,19 +297,34 @@ void MemoryEditor::Draw()
                     // ss << (std::isprint(ascii) ? ascii : '.');
                     ascii = (std::isprint(ascii) ? ascii : '.');
 
+
                     if (j >= cursorMinIndex && j <= cursorMaxIndex)
                     {
                         // TODO: Switch the background and foreground colors of the cells "selected"
-                        ImGui::SameLine();
                         ImVec2 cursorPosUpperLeft = ImGui::GetCursorScreenPos();
                         ImVec2 asciiTextSize = ImGui::CalcTextSize(" 0");
                         ImVec2 cursorPosLowerRight = ImVec2(cursorPosUpperLeft.x + asciiTextSize.x, cursorPosUpperLeft.y + asciiTextSize.y);
                         // Some sort of light blue rectangle
-                        drawList->AddRect(cursorPosUpperLeft, cursorPosLowerRight, IM_COL32(147, 181, 196, 125));
-                        ImGui::SameLine();
-                    }
+                        drawList->AddRectFilled(cursorPosUpperLeft, cursorPosLowerRight, IM_COL32(125, 175, 175, 100));
 
-                    ImGui::Text("%c", ascii);
+                        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 255, 0, 255));
+                        // FIXME: Use a different font to display Unicode
+                        // ImGuiIO& io = ImGui::GetIO();
+                        // io.Fonts->AddFontFromFileTTF("path/to/NotoSans-Regular.ttf", 18.0f, nullptr, io.Fonts->GetGlyphRangesDefault());
+                        if (ascii == ' ')
+                        {
+                            ImGui::Text("\xE2\x90\xA3");
+                        }
+                        else
+                        {
+                            ImGui::Text("%c", ascii);
+                        }
+                        ImGui::PopStyleColor();
+                    }
+                    else
+                    {
+                        ImGui::Text("%c", ascii);
+                    }
                 }
                 // ImGui::SameLine();
                 // std::string asciiString = ss.str();
@@ -308,7 +340,7 @@ void MemoryEditor::Draw()
     }
 
     /* 
-        TODO: Implement keypress
+        Keypresses:
         Check this piece of code for reference:
         https://github.com/WerWolv/ImHex/blob/00cf8ecb18b2024ba375c353ce9680d33512f65a/libs/ImGui/include/imgui_memory_editor.h#L260
     */
@@ -317,7 +349,6 @@ void MemoryEditor::Draw()
     {
         bool isCtrlDown = false;
         bool isShiftDown = false;
-        // TODO: Use flags isCtrlDown and isShiftDown
         if (ImGui::IsKeyDown(ImGuiKey_LeftCtrl))
         {
             isCtrlDown = true;
