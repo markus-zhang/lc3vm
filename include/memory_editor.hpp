@@ -30,10 +30,10 @@ public:
     ImVec2 winPos;
 
     std::vector<charGlyph> buffer;
-    uint64_t bufferSize;
-    uint64_t cursorStartIndex;
-    uint64_t cursorEndIndex;
-    uint64_t initialAddress;
+    int64_t bufferSize;
+    int64_t cursorStartIndex;
+    int64_t cursorEndIndex;
+    int64_t initialAddress;
 
     bool readOnly;
     int fontSize;

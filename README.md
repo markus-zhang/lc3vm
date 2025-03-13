@@ -179,3 +179,11 @@ OK since I have reached a milestone I'm going to put this project on hold for th
 * CTRL+SHIFT+ARROW implemented
 
 * UP and DOWN ARROWs implemented
+
+= 2025-03-13
+
+* CTRL/SHIFT + UP/DOWN ARROWs implemented
+
+* Fixed an overflow issue by switching to int64_t
+
+* ASCII rectangels implemented

@@ -239,8 +239,8 @@ void MemoryEditor::Draw()
                 StartIndex is not necessarily <= EndIndex
             */
             
-            uint64_t cursorMinIndex = (cursorStartIndex <= cursorEndIndex ? cursorStartIndex : cursorEndIndex);
-            uint64_t cursorMaxIndex = (cursorStartIndex <= cursorEndIndex ? cursorEndIndex : cursorStartIndex);
+            int64_t cursorMinIndex = (cursorStartIndex <= cursorEndIndex ? cursorStartIndex : cursorEndIndex);
+            int64_t cursorMaxIndex = (cursorStartIndex <= cursorEndIndex ? cursorEndIndex : cursorStartIndex);
 
             if (i >= cursorMinIndex && i <= cursorMaxIndex)
             {
@@ -272,15 +272,31 @@ void MemoryEditor::Draw()
                 ImVec2 moveToASCIIPos = ImVec2(asciiPos.x, ImGui::GetCursorScreenPos().y);
                 ImGui::SetCursorPos(moveToASCIIPos);
                 ImGui::Text(" ");
-                int leftIndex = (i / 16) * 16;
+                int64_t leftIndex = (i / 16) * 16;
                 for (size_t j = leftIndex; j <= i; j++)
                 {
+                    ImGui::SameLine();
                     char ascii = buffer[j].ch;
-                    ss << (std::isprint(ascii) ? ascii : '.');
+                    // ss << (std::isprint(ascii) ? ascii : '.');
+                    ascii = (std::isprint(ascii) ? ascii : '.');
+
+                    if (j >= cursorMinIndex && j <= cursorMaxIndex)
+                    {
+                        // TODO: Switch the background and foreground colors of the cells "selected"
+                        ImGui::SameLine();
+                        ImVec2 cursorPosUpperLeft = ImGui::GetCursorScreenPos();
+                        ImVec2 asciiTextSize = ImGui::CalcTextSize(" 0");
+                        ImVec2 cursorPosLowerRight = ImVec2(cursorPosUpperLeft.x + asciiTextSize.x, cursorPosUpperLeft.y + asciiTextSize.y);
+                        // Some sort of light blue rectangle
+                        drawList->AddRect(cursorPosUpperLeft, cursorPosLowerRight, IM_COL32(147, 181, 196, 125));
+                        ImGui::SameLine();
+                    }
+
+                    ImGui::Text("%c", ascii);
                 }
-                ImGui::SameLine();
-                std::string asciiString = ss.str();
-                ImGui::Text("%s", asciiString.c_str());
+                // ImGui::SameLine();
+                // std::string asciiString = ss.str();
+                // ImGui::Text("%s", asciiString.c_str());
                 ss.str("");
                 ss.clear();
             }
@@ -322,13 +338,15 @@ void MemoryEditor::Draw()
             /* CTRL + RIGHT ARROW for jumping to end of row */
             else if (isCtrlDown)
             {
-                uint64_t cursorStartIndexTemp = cursorStartIndex | 0x0F;
                 /* EXPLAIN: Check for last row that has less than 16 cells */
-                if (cursorStartIndexTemp > bufferSize - 1)
+                if (cursorStartIndex | 0x0F > bufferSize - 1)
                 {
-                    cursorStartIndexTemp = bufferSize - 1;
+                    cursorStartIndex = bufferSize - 1;
                 }
-                cursorStartIndex = cursorStartIndexTemp;
+                else
+                {
+                    cursorStartIndex = cursorStartIndex | 0x0F;
+                }
                 cursorEndIndex = cursorStartIndex;
             }
             /* 
@@ -367,7 +385,7 @@ void MemoryEditor::Draw()
             */
             if (isCtrlDown && isShiftDown)
             {
-                cursorEndIndex &= (uint64_t)0xFFFFFFFFFFFFFFF0;
+                cursorEndIndex &= (int64_t)0xFFFFFFFFFFFFFFF0;
             }
             /* 
                 EXPLAIN: 
@@ -375,7 +393,7 @@ void MemoryEditor::Draw()
             */
             else if (isCtrlDown)
             {
-                cursorStartIndex &= (uint64_t)0xFFFFFFFFFFFFFFF0;
+                cursorStartIndex &= (int64_t)0xFFFFFFFFFFFFFFF0;
                 cursorEndIndex = cursorStartIndex;
             }
             /* 
@@ -406,127 +424,85 @@ void MemoryEditor::Draw()
 
         if (ImGui::IsKeyPressed(ImGuiKey_DownArrow))
         {
-            /*
-                EXPLAIN:
-                If possible, go down one row to the same column, otherwise go to the last cell
-                Exception: if we are already at the last row, DON'T go to the last cell, it feels weird
-            */
-            if ((cursorStartIndex | 0x0F) != ((bufferSize - 1) | 0x0F))
+            if (isShiftDown)
             {
-                uint64_t cursorStartIndexTemp = cursorStartIndex + 16;
-                if (cursorStartIndexTemp > bufferSize - 1)
+                /*
+                    EXPLAIN:
+                    SHIFT + DOWN ARROW = adding the next 16 cells after cursorEndIndex into selection
+                    if cursorEndIndex <= cursorStartIndex, reset cursorEndIndex first
+                    if cursorEndIndex >= cursorStartIndex, no need to reset
+                */
+
+                if (cursorEndIndex + 16 <= bufferSize - 1)
                 {
-                    cursorStartIndexTemp = bufferSize - 1;
+                    cursorEndIndex += 16;
                 }
-                cursorStartIndex = cursorStartIndexTemp;
-                cursorEndIndex = cursorStartIndex;
+                else
+                {
+                    cursorEndIndex = bufferSize - 1;
+                }
+            }
+            else
+            {
+                /*
+                    EXPLAIN:
+                    If possible, go down one row to the same column, otherwise go to the last cell
+                    Exception: if we are already at the last row, DON'T go to the last cell, it feels weird
+                */
+                if ((cursorStartIndex | 0x0F) != ((bufferSize - 1) | 0x0F))
+                {
+                    if (cursorStartIndex + 16 > bufferSize - 1)
+                    {
+                        cursorStartIndex = bufferSize - 1;
+                    }
+                    else
+                    {
+                        cursorStartIndex += 16;
+                    }
+                    cursorEndIndex = cursorStartIndex;
+                }
             }
         }
 
         if (ImGui::IsKeyPressed(ImGuiKey_UpArrow))
         {
-            /*
-                EXPLAIN:
-                If possible, go up one row to the same column, otherwise go to the first cell
-                Exception: if we are already at the first row, DON'T go to the first cell, it feels weird
-            */
-            
-            if (cursorStartIndex > 0x0F)
+            if (isShiftDown)
             {
-                uint64_t cursorStartIndexTemp = cursorStartIndex - 16;
-                if (cursorStartIndexTemp < 0)
+                /*
+                    EXPLAIN:
+                    SHIFT + UP ARROW = adding the previous 16 cells after cursorEndIndex into selection
+                */
+
+                if (cursorEndIndex - 16 >= 0)
                 {
-                    cursorStartIndexTemp = 0;
+                    cursorEndIndex -= 16;
                 }
-                cursorStartIndex = cursorStartIndexTemp;
-                cursorEndIndex = cursorStartIndex;
+                else
+                {
+                    cursorEndIndex = 0;
+                }
+            }
+            else 
+            {
+                /*
+                    EXPLAIN:
+                    If possible, go up one row to the same column, otherwise go to the first cell
+                    Exception: if we are already at the first row, DON'T go to the first cell, it feels weird
+                */
+               printf("Shift is NOT down!\n");
+                if (cursorStartIndex > 0x0F)
+                {
+                    int64_t cursorStartIndexTemp = cursorStartIndex - 16;
+                    if (cursorStartIndexTemp < 0)
+                    {
+                        cursorStartIndexTemp = 0;
+                    }
+                    cursorStartIndex = cursorStartIndexTemp;
+                    cursorEndIndex = cursorStartIndex;
+                }
             }
         }
 
-        // if (ImGui::IsKeyDown(ImGuiKey_LeftCtrl))
-        // {
-        //     if (ImGui::IsKeyPressed(ImGuiKey_RightArrow))
-        //     {
-        //         // Move cursorStartIndex to the end of the row
-        //         uint64_t cursorStartIndexTemp = ((cursorStartIndex & 0xFFFFFFFFFFFFFFF0) | 0x0F);
-        //         if (cursorStartIndex >= bufferSize - 1)
-        //         {
-        //             cursorStartIndex = bufferSize - 1;
-        //         }
-        //         else
-        //         {
-        //             cursorStartIndex = cursorStartIndexTemp;
-        //         }
-        //         cursorEndIndex = cursorStartIndex;
-        //     }
-        //     else if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow))
-        //     {
-        //         // Move cursorStartIndex to the beginning of the row
-        //         cursorStartIndex = (cursorStartIndex & 0xFFFFFFFFFFFFFFF0);
-        //         cursorEndIndex = cursorStartIndex;
-        //     }
-        // }
-        // else if (ImGui::IsKeyDown(ImGuiKey_LeftShift))
-        // {
-        //     if (ImGui::IsKeyPressed(ImGuiKey_RightArrow))
-        //     {
-        //         // Move cursorEndIndex to the end of the row
-        //         uint64_t cursorEndIndexTemp = ((cursorEndIndex & 0xFFFFFFFFFFFFFFF0) | 0x0F);
-        //         if (cursorEndIndexTemp >= bufferSize - 1)
-        //         {
-        //             cursorEndIndexTemp = bufferSize - 1;
-        //         }
-        //         else
-        //         {
-        //             cursorEndIndex = cursorEndIndexTemp;
-        //         }
-        //     }
-        //     else if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow))
-        //     {
-        //         // Move cursorStartIndex to the beginning of the row
-        //         cursorStartIndex = (cursorStartIndex & 0xFFFFFFFFFFFFFFF0);
-        //     }
-        // }
-        // else if (ImGui::IsKeyPressed(ImGuiKey_RightArrow))
-        // {
-        //     if (cursorStartIndex < bufferSize - 1)
-        //     {
-        //         cursorStartIndex += 1;
-        //     }
-        //     cursorEndIndex = cursorStartIndex;
-        // }
-        // else if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow))
-        // {
-        //     if (cursorStartIndex > 0)
-        //     {
-        //         cursorStartIndex -= 1;
-        //     }
-        //     cursorEndIndex = cursorStartIndex;
-        // }
-        // else if (ImGui::IsKeyPressed(ImGuiKey_DownArrow))
-        // {
-        //     if (cursorStartIndex + 16 <= bufferSize - 1)
-        //     {
-        //         cursorStartIndex += 16;
-        //     }
-        //     else
-        //     {
-        //         cursorStartIndex = bufferSize - 1;
-        //     }
-        //     cursorEndIndex = cursorStartIndex;
-        // }
-        // else if (ImGui::IsKeyPressed(ImGuiKey_UpArrow))
-        // {
-        //     if (cursorStartIndex - 16 >= 0)
-        //     {
-        //         cursorStartIndex -= 16;
-        //     }
-        //     else
-        //     {
-        //         cursorStartIndex = 0;
-        //     }
-        //     cursorEndIndex = cursorStartIndex;
-        // }
         
     }
 
