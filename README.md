@@ -190,4 +190,14 @@ OK since I have reached a milestone I'm going to put this project on hold for th
 
 * Different colors for highlighted characters, both in HEX and in ASCII
 
+* Restructured the code a bit, added another function Input()
+
++ IMPORTANT: Modify Makefile so that I can compile the memory editor as a separate unit
+
 + Need to load a different font to display Unicode such as visible space `␣`
+
++ Think about other windows that we need for a hex editor (like a window with implied file format, md65 hashed, etc.)
+
++ Think about a way to encode file structure (e.g. midi file should have its header, sequences, etc.). Each file format has completely different "sections" but all sections should be able to have differen color
+
++ Think about a way to limit cursor movement (e.g. lock the cursor within the same section)

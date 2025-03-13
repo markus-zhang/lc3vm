@@ -38,10 +38,13 @@ public:
     bool readOnly;
     int fontSize;
 
+    ImDrawList* drawList;
+
 public:
     MemoryEditor();
     MemoryEditor(uint8_t* memory, uint64_t memorySize, const ImGuiWindowConfig& config);
     ~MemoryEditor() = default;
 
     void Draw();
+    void Input();
 };

@@ -66,6 +66,7 @@ MemoryEditor::MemoryEditor()
     cursorStartIndex = 0;
     cursorEndIndex = 0;
     initialAddress = 0;
+    drawList = nullptr;
 }
 
 MemoryEditor::MemoryEditor(uint8_t* memory, uint64_t memorySize, const ImGuiWindowConfig& config)
@@ -106,7 +107,8 @@ void MemoryEditor::Draw()
         I don't know for sure, but looks like we add all lines, rectangles into a draw list
         https://github.com/WerWolv/ImHex/blob/00cf8ecb18b2024ba375c353ce9680d33512f65a/libs/ImGui/include/imgui_memory_editor.h#L212C9-L212C60
     */
-    ImDrawList* drawList = ImGui::GetForegroundDrawList();
+    
+    drawList = ImGui::GetForegroundDrawList();
 
     if (ImGui::Begin("Memory Editor Window", nullptr, ImGuiWindowFlags_None))
     {
@@ -284,7 +286,7 @@ void MemoryEditor::Draw()
                 we need to move the cursor (as the cursor is not at the ASCII position)
             */
 
-            if (i % 16 == 15 || i == initialAddress + bufferSize - 1)
+            if ((i % 16 == 15) || (i == bufferSize - 1))
             {
                 ImVec2 moveToASCIIPos = ImVec2(asciiPos.x, ImGui::GetCursorScreenPos().y);
                 ImGui::SetCursorPos(moveToASCIIPos);
@@ -336,9 +338,16 @@ void MemoryEditor::Draw()
             ImGui::PopID();
         }
 
+        Input();
+
         ImGui::PopStyleColor();
     }
 
+    ImGui::End();
+}
+
+void MemoryEditor::Input()
+{
     /* 
         Keypresses:
         Check this piece of code for reference:
@@ -370,7 +379,7 @@ void MemoryEditor::Draw()
             else if (isCtrlDown)
             {
                 /* EXPLAIN: Check for last row that has less than 16 cells */
-                if (cursorStartIndex | 0x0F > bufferSize - 1)
+                if ((cursorStartIndex | 0x0F) > bufferSize - 1)
                 {
                     cursorStartIndex = bufferSize - 1;
                 }
@@ -533,9 +542,5 @@ void MemoryEditor::Draw()
                 }
             }
         }
-
-        
     }
-
-    ImGui::End();
 }
