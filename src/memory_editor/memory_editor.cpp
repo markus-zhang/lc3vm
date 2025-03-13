@@ -208,12 +208,19 @@ void MemoryEditor::Draw()
             2. For each byte, we need to PushID(i) to avoid conflict IDs, and PopID() at the end
         */
 
-        for (size_t i = initialAddress; i < initialAddress + bufferSize; i++)
+        for (size_t i = initialAddress; i < initialAddress + PAGE_ROWS * PAGE_COLUMNS; i++)
         {
             /*
                 Starting from initialAddress, we only render a max of 512 bytes each frame - 
                 This is 16 bytes per row * 32 rows hardcoded
             */
+            
+            // Break if i is over bufferSize - 1, 
+            // because sometimes the last row doesn't always have PAGE_COLUMNS bytes
+            if (i > bufferSize - 1)
+            {
+                break;
+            }
 
             // EXPLAIN: PushID() to avoid conflict IDs
             ImGui::PushID(i);
@@ -349,6 +356,8 @@ void MemoryEditor::Input()
         Keypresses:
         Check this piece of code for reference:
         https://github.com/WerWolv/ImHex/blob/00cf8ecb18b2024ba375c353ce9680d33512f65a/libs/ImGui/include/imgui_memory_editor.h#L260
+
+        FIXME: Move initialAddress if any of the selected area reaches off screen addresses
     */
 
     if (ImGui::IsWindowFocused())
@@ -367,12 +376,20 @@ void MemoryEditor::Input()
 
         if (ImGui::IsKeyPressed(ImGuiKey_RightArrow))
         {
-            /* CTRL + SHIFT + RIGHT ARROW for contiguous selection towards the end of row */
+            /* 
+                EXPLAIN:
+                CTRL + SHIFT + RIGHT ARROW for contiguous selection towards the end of row 
+                No need to adjust initialAddress as we are not moving vertically
+            */
             if (isCtrlDown && isShiftDown)
             {
                 cursorEndIndex = cursorEndIndex | 0x0F;
             }
-            /* CTRL + RIGHT ARROW for jumping to end of row */
+            /* 
+                EXPLAIN:
+                CTRL + RIGHT ARROW for jumping to end of row 
+                No need to adjust initialAddress as we are not moving vertically
+            */
             else if (isCtrlDown)
             {
                 /* EXPLAIN: Check for last row that has less than 16 cells */
@@ -402,13 +419,22 @@ void MemoryEditor::Input()
                     cursorEndIndex++;
                 }
             }
-            /* ARROW for moving the cursor */
+            /*
+                EXPLAIN:
+                RIGHT ARROW moves the cursor to the next cell
+                We also adjust initialAddress if needed
+            */
             else
             {
-                if (cursorEndIndex < bufferSize - 1)
+                if (cursorStartIndex < bufferSize - 1)
                 {
-                    cursorStartIndex++;
+                    cursorStartIndex += 1;
                     cursorEndIndex = cursorStartIndex;
+                }
+
+                if (cursorStartIndex >= (initialAddress + PAGE_ROWS * PAGE_COLUMNS))
+                {
+                    initialAddress += PAGE_COLUMNS;
                 }
             }
         }
@@ -419,6 +445,8 @@ void MemoryEditor::Input()
                 EXPLAIN: 
                 CTRL + SHIFT + LEFT ARROW for contiguous selection towards the end of row 
                 NOTE: always fix cursorStartIndex and move cursorEndIndex
+
+                No need to adjust initialAddress as we are not moving vertically
             */
             if (isCtrlDown && isShiftDown)
             {
@@ -427,6 +455,8 @@ void MemoryEditor::Input()
             /* 
                 EXPLAIN: 
                 CTRL + LEFT ARROW for jumping to the first cell of row 
+
+                No need to adjust initialAddress as we are not moving vertically
             */
             else if (isCtrlDown)
             {
@@ -447,14 +477,20 @@ void MemoryEditor::Input()
             }
             /* 
                 EXPLAIN: 
-                LEFT ARROW for moving the cursor to the previous address 
+                LEFT ARROW for moving the cursor to the previous address
+                We also check screen boundaries (initialAddress -> initialAddress + 32 * 16 - 1) 
             */
             else
             {
-                if (cursorEndIndex > 0)
+                if (cursorStartIndex > 0)
                 {
-                    cursorStartIndex--;
+                    cursorStartIndex -= 1;
                     cursorEndIndex = cursorStartIndex;
+
+                    if (cursorStartIndex < initialAddress)
+                    {
+                        initialAddress -= PAGE_COLUMNS;
+                    }
                 }
             }
         }
@@ -468,6 +504,9 @@ void MemoryEditor::Input()
                     SHIFT + DOWN ARROW = adding the next 16 cells after cursorEndIndex into selection
                     if cursorEndIndex <= cursorStartIndex, reset cursorEndIndex first
                     if cursorEndIndex >= cursorStartIndex, no need to reset
+
+                    We need to adjust initialAddress as we are now moving vertically --
+                    
                 */
 
                 if (cursorEndIndex + 16 <= bufferSize - 1)
@@ -485,6 +524,8 @@ void MemoryEditor::Input()
                     EXPLAIN:
                     If possible, go down one row to the same column, otherwise go to the last cell
                     Exception: if we are already at the last row, DON'T go to the last cell, it feels weird
+
+                    We also need to adjust initialAddress if cursorStartIndex goes out of the bigger boundary
                 */
                 if ((cursorStartIndex | 0x0F) != ((bufferSize - 1) | 0x0F))
                 {
@@ -497,6 +538,11 @@ void MemoryEditor::Input()
                         cursorStartIndex += 16;
                     }
                     cursorEndIndex = cursorStartIndex;
+
+                    if (cursorStartIndex >= initialAddress + PAGE_ROWS * PAGE_COLUMNS)
+                    {
+                        initialAddress += PAGE_COLUMNS;
+                    }
                 }
             }
         }
@@ -525,17 +571,25 @@ void MemoryEditor::Input()
                     EXPLAIN:
                     If possible, go up one row to the same column, otherwise go to the first cell
                     Exception: if we are already at the first row, DON'T go to the first cell, it feels weird
+
+                    We also need to adjust initialAddress if cursorStartIndex goes out of the smaller boundary
                 */
-               printf("Shift is NOT down!\n");
                 if (cursorStartIndex > 0x0F)
                 {
-                    int64_t cursorStartIndexTemp = cursorStartIndex - 16;
-                    if (cursorStartIndexTemp < 0)
+                    if (cursorStartIndex < 16)
                     {
-                        cursorStartIndexTemp = 0;
+                        cursorStartIndex = 0;
                     }
-                    cursorStartIndex = cursorStartIndexTemp;
+                    else
+                    {
+                        cursorStartIndex -= 16;
+                    }
                     cursorEndIndex = cursorStartIndex;
+
+                    if (cursorStartIndex < initialAddress)
+                    {
+                        initialAddress -= PAGE_COLUMNS;
+                    }
                 }
             }
         }

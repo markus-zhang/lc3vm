@@ -25,9 +25,12 @@ void sdl_imgui_frame();
 void run();
 void shutdown();
 
+// file manipulator
+size_t load_file(const char* path);
+
 /* ------- function declarations end --------*/
 
-char buffer[MAX_SIZE] = {0};
+uint8_t buffer[MAX_SIZE] = {0};
 bool running = 1;
 
 
@@ -60,14 +63,7 @@ int main()
 
 int init()
 {
-    // FILE* fp = fopen("./2048.obj", "rb");
-    // if (!fp)
-    // {
-    //     std::cerr << "Failed to read file" << std::endl;
-    //     exit(1);
-    // }
-	// int64_t numInstr = load_memory(buffer, memory, fp);
-    // fclose(fp);
+    uint64_t size = load_file("./2048.obj");
 
     /* --------------------------------Loading End----------------------------- */
     SDL_Init(SDL_INIT_EVERYTHING);
@@ -99,8 +95,8 @@ int init()
 
 	// FIXME: Just for testing memory editor, remove afterwards
 	ImGuiWindowConfig memoryEditorConfig {true, 20, {864, 720}, {864, 720}, {0, 0}};
-	uint8_t testString[] = "abcdefghijklmnopqrstuvmxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-	me = MemoryEditor(testString, 53, memoryEditorConfig);
+	// uint8_t testString[] = "abcdefghijklmnopqrstuvmxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	me = MemoryEditor(buffer, size, memoryEditorConfig);
 
     isRunning = true;
 
@@ -201,3 +197,20 @@ void run()
     }
 }
 
+size_t load_file(const char* path)
+{
+    // FILE* fp = fopen("./2048.obj", "rb");
+    FILE* fp = fopen(path, "rb");
+    if (!fp)
+    {
+        std::cerr << "Failed to read file" << std::endl;
+        exit(1);
+    }
+
+    size_t size = fread(buffer, 1, MAX_SIZE, fp);
+    printf("Number of bytes read: %d\n", size);
+	
+    fclose(fp); 
+
+    return size;
+}

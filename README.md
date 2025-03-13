@@ -26,7 +26,7 @@ Whenever a bug /missing feature is mentioned during the night and I don't fix it
 
 --- John Carmack's student
 
-= 2025-01-16 ===================================================
+### 2025-01-16 ===================================================
 
 * decide upon the scope of the project - the project should first realize the various debugging windows for the LC3 VM before implementing the optional terminal <- I only care about CPU emulation through dynarec so the first priority is to be able to read the registers, the memory as well as the basic blocks and their translated code. This experiment is just a preparatio for the next system, probably CHIP-8 which does need some SDL code
 
@@ -40,7 +40,7 @@ Whenever a bug /missing feature is mentioned during the night and I don't fix it
 
 + a window for showing the basic blocks and their translated code
 
-= 2025-02-08 ===================================================
+### 2025-02-08 ===================================================
 
 Sorry I haven't updated the README for a long time, but I have made some progress:
 
@@ -56,7 +56,7 @@ Sorry I haven't updated the README for a long time, but I have made some progres
 
 + I need to reorganize the code. It needs more love and I feel I use too many switches/flags for different states (e.g. `isKeyPressed`, `isDebug`, `signalQuit`, etc.) -- what if there are more windows? It's going to be a state hell.
 
-= 2025-02-11 =======================================================
+### 2025-02-11 =======================================================
 
 New TODOs: To make it a bit more useful, we need to add step-in debugging, otherwise the code disa window is useless.
 
@@ -72,11 +72,11 @@ New TODOs: To make it a bit more useful, we need to add step-in debugging, other
 
 + Add code in lc3vmwin_memory.cpp that adds an input box. Users can input an address and the memory window "jumps" to that address (or the nearest 0x__00)
 
-= 2025-02-13 =========================================================
+### 2025-02-13 =========================================================
 
 + Add code for a console
 
-= 2025-02-18
+### 2025-02-18
 
 * Big day! I figured out why the display is lagging so much. After much debugging (most of the past week and today), I tested everything and finally figured out that the frame rate is crazingly high, and the rendering loop is blocking everything else. It was fixed by simply capping the frame rate to 60 FPS. I actually knew about this in the first day of debugging this issue but somehow didn't take it seriously.
 
@@ -88,7 +88,7 @@ New TODOs: To make it a bit more useful, we need to add step-in debugging, other
 
 + Next major task: continue working on the input box in lc3vmwin_memory.cpp
 
-= 2025-02-19
+### 2025-02-19
 
 * line 1033 TODO in `parse_escape()`: Yes we can comment it all out, because after `parse_escape()` we simply return from `trap_0x22_imgui` so no characters are read
 
@@ -98,7 +98,7 @@ New TODOs: To make it a bit more useful, we need to add step-in debugging, other
 
 + Next immediate minor task: fix seg fault in Char_Array_to_Number(), must be something to do with array index error
 
-= 2025-02-23
+### 2025-02-23
 
 * Fixed seg fault in Char_Array_to_Number(), must be something to do with array index error -> I don't know why buy I'm keeping using `size_t` as loop index, have I lost my mind? Probably.
 
@@ -114,7 +114,7 @@ New TODOs: To make it a bit more useful, we need to add step-in debugging, other
 
 + Next immediately minor task: align (downward) the return value of `Char_Array_to_Number()` to the nearest 0x00?0, but also make sure that a whole 32 rows are shown. For example, round down 0x1034 to 0x1030 is perfectly fine as we can show all 16 rows from 0x1030, but for 0xfff1 we have to round it further down to 0xfe00 so that all 16 rows are shown.
 
-= 2025-02-24
+### 2025-02-24
 
 * Done: Remove the Row < button and add Page << button. Keep the code as comment so that we can test the Page <, Page <<, Page > and Page >> buttons easily.
 
@@ -124,7 +124,7 @@ New TODOs: To make it a bit more useful, we need to add step-in debugging, other
 
     + Most is done, but I need to use a Callback to set initialAddress when enter key is hit (I don't want initialAddress to be changed with each keystroke, going to too much)
 
-= 2025-02-26
+### 2025-02-26
 
 * Done working on the input box in lc3vmwin_memory.cpp, now it works perfectly, can jump to any address without errors
 
@@ -137,11 +137,11 @@ New TODOs: To make it a bit more useful, we need to add step-in debugging, other
 
 + Figure out how to use the `readonly` flag in lc3vmwin_memory. And clean up the code a bit - at least remove all those unused, buddy
 
-= 2025-03-02
+### 2025-03-02
 
 * Figured out a way to use UNION to represent different sizes of registers, so that the Regster Window widget can be a big more general (doesn't care about the reg size of the machine)
 
-= 2025-03-03
+### 2025-03-03
 
 * Completed the first version of the register watch window
 
@@ -149,11 +149,11 @@ New TODOs: To make it a bit more useful, we need to add step-in debugging, other
     + an arrow > in the disassembler window 
     + step-in and continue button in the disassembler window
 
-= 2025-03-04
+### 2025-03-04
 
 + Still working on the step-in debugger. I think I figured out how to stop the execution without holding the whole program
 
-= 2025-03-05
+### 2025-03-05
 
 * Step-in beautifully done! This is a major milestone.
     * Now code caches are generated properly - previously each line of code generates a new block, which is definitely wrong. Now `cache_find()` check whether the line is WITHIN the boudary of the whole block, and return index of cache as well as index of code to the caller function
@@ -166,15 +166,17 @@ New TODOs: To make it a bit more useful, we need to add step-in debugging, other
 
 + Figure out how to use the `readonly` flag in lc3vmwin_memory.
 
-= 2025-03-06
+### 2025-03-06
 
 OK since I have reached a milestone I'm going to put this project on hold for the moment. I could work on additional features but this project has accomplished what it was planned for.
 
-= 2025-03-07
+## .plan for the memory editor
+
+### 2025-03-07
 
 + I want to expand the memory editor to an independent product. I included some plans in the .cpp file but of course they are subject to change and expand.
 
-= 2025-03-09
+### 2025-03-09
 
 * Basic requirement analysis done
 
@@ -182,13 +184,13 @@ OK since I have reached a milestone I'm going to put this project on hold for th
 
 + Optional, but figure out how to make the rectangle contigous (no border between)
 
-= 2025-03-11
+### 2025-03-11
 
 * CTRL+SHIFT+ARROW implemented
 
 * UP and DOWN ARROWs implemented
 
-= 2025-03-13
+### 2025-03-13
 
 * CTRL/SHIFT + UP/DOWN ARROWs implemented
 
@@ -200,7 +202,13 @@ OK since I have reached a milestone I'm going to put this project on hold for th
 
 * Restructured the code a bit, added another function Input()
 
-* IMPORTANT: Modify Makefile so that I can compile the memory editor as a separate unit
+* Modified Makefile so that I can compile the memory editor as a separate unit
+
+* Added a `load_file()` function to `memory_editor_demo.cpp`
+
+* Modified memory_editor so that it can handle larger files (larger than one page)
+
+- Immediate: Find all places that need to adjust initialAddress (the view window). For example if we move the cursor down one row, and it goes out of the windows boundary, we need to increment initialAddress for PAGE_COLUMNS so that the whole window moves down for one row too
 
 + Need to load a different font to display Unicode such as visible space `␣`
 

@@ -4,6 +4,9 @@
 #include <vector>
 #include <cinttypes>
 
+#define PAGE_COLUMNS    16
+#define PAGE_ROWS       32
+
 struct charGlyph
 {
     unsigned char ch;
