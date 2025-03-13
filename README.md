@@ -1,4 +1,12 @@
-## How to build
+## How to build the memory editor
+
+Right now only supports Linux (I'm using Ubuntu LTSC 22.04, ImGui 1.91.8 WIP, SDL2 last version)
+
+- First, install SDL2 library
+- Clone this repo
+- Run `make run_me`
+
+## How to build the LC-3 2048 emulator
 
 Right now only supports Linux (I'm using Ubuntu LTSC 22.04, ImGui 1.91.8 WIP, SDL2 last version)
 
@@ -192,7 +200,7 @@ OK since I have reached a milestone I'm going to put this project on hold for th
 
 * Restructured the code a bit, added another function Input()
 
-+ IMPORTANT: Modify Makefile so that I can compile the memory editor as a separate unit
+* IMPORTANT: Modify Makefile so that I can compile the memory editor as a separate unit
 
 + Need to load a different font to display Unicode such as visible space `␣`
 

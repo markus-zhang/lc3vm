@@ -289,7 +289,7 @@ void MemoryEditor::Draw()
                 ImGui::SetCursorPos(moveToASCIIPos);
                 ImGui::Text(" ");
                 int64_t leftIndex = (i / 16) * 16;
-                for (size_t j = leftIndex; j <= i; j++)
+                for (int64_t j = leftIndex; j <= i; j++)
                 {
                     ImGui::SameLine();
                     char ascii = buffer[j].ch;
