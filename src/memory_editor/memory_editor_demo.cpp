@@ -94,7 +94,7 @@ int init()
     ImGui_ImplSDLRenderer2_Init(renderer);
 
 	// FIXME: Just for testing memory editor, remove afterwards
-	ImGuiWindowConfig memoryEditorConfig {true, 20, {864, 720}, {864, 720}, {0, 0}};
+	ImGuiWindowConfig memoryEditorConfig {true, 16, {896, 1024}, {896, 1024}, {0, 0}};
 	// uint8_t testString[] = "abcdefghijklmnopqrstuvmxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 	me = MemoryEditor(buffer, size, memoryEditorConfig);
 

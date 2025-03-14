@@ -59,6 +59,7 @@ MemoryEditor::MemoryEditor()
     buffer.reserve(0);
     bufferSize = 0;
     readOnly = true;
+    font = nullptr;
     fontSize = 14;
     initialWindowSize = {0, 0};
     minWindowSize = {0, 0};
@@ -100,10 +101,13 @@ MemoryEditor::MemoryEditor(uint8_t* memory, uint64_t memorySize, const ImGuiWind
     initialAddress      = 0;
 
     minInitialAddress   = 0;
-    maxInitialAddress   = Calculate_MaxInitialAddress();
+    maxInitialAddress   = CalculateMaxInitialAddress();
     cursorStartBoundary = 0;
     cursorEndBoundary   = bufferSize - 1;
-    printf("Max Initial Address is: %06x\n", maxInitialAddress);
+    
+    // FIXME: find a custom font that accepts visible space
+    ImGuiIO& io = ImGui::GetIO();
+    io.Fonts->AddFontFromFileTTF("./JetBrainsMono.ttf", fontSize, nullptr, io.Fonts->GetGlyphRangesDefault());
 }
 
 void MemoryEditor::Draw()
@@ -122,7 +126,6 @@ void MemoryEditor::Draw()
 
     if (ImGui::Begin("Memory Editor Window", nullptr, ImGuiWindowFlags_None))
     {
-
         /* 
             EXPLAIN: 
             Render first row -> each row shows 16 bytes
@@ -219,6 +222,7 @@ void MemoryEditor::Draw()
         */
 
         for (size_t i = initialAddress; i < initialAddress + PAGE_ROWS * PAGE_COLUMNS; i++)
+        // for (size_t i = initialAddress; i < bufferSize; i++)
         {
             /*
                 Starting from initialAddress, we only render a max of 512 bytes each frame - 
@@ -531,10 +535,22 @@ void MemoryEditor::Input()
                     cursorEndIndex = bufferSize - 1;
                 }
 
-                if (cursorEndIndex >= initialAddress + PAGE_ROWS * PAGE_COLUMNS)
+                ResetInitialAddress(BREAKTHROUGH_ENDINDEX);
+            }
+            else if (isCtrlDown)
+            {
+                /*
+                    EXPLAIN:
+                    Just turn a page if possible, otherwise take the last cell. 
+                    This is for fast scrolling -> 512 bytes per keystroke
+                */
+                cursorStartIndex = initialAddress + PAGE_ROWS * PAGE_COLUMNS + (cursorStartIndex & 0x0F);
+                if (cursorStartIndex > bufferSize - 1)
                 {
-                    initialAddress += PAGE_COLUMNS;
+                    cursorStartIndex = bufferSize - 1;
                 }
+                cursorEndIndex = cursorStartIndex;
+                ResetInitialAddress(BREAKTHROUGH_STARTINDEX);
             }
             else
             {
@@ -555,24 +571,12 @@ void MemoryEditor::Input()
                     {
                         cursorStartIndex += 16;
                     }
-
-                    // if (cursorStartIndex >= initialAddress + PAGE_ROWS * PAGE_COLUMNS)
-                    // {
-                    //     initialAddress += PAGE_COLUMNS;
-                    // }
                 }
                 // Always reset cursorEndIndex, just in case there are multiple selected cells
                 cursorEndIndex = cursorStartIndex;
 
                 // Reset initialAddress based on cursorStartIndex if out of window
-                if (cursorStartIndex >= initialAddress + PAGE_ROWS * PAGE_COLUMNS)
-                {
-                    initialAddress = cursorStartIndex & (int64_t)0xFFFFFFFFFFFFFFF0;
-                    if (initialAddress > maxInitialAddress)
-                    {
-                        initialAddress = maxInitialAddress;
-                    }
-                }
+                ResetInitialAddress(BREAKTHROUGH_STARTINDEX);
             }
         }
 
@@ -596,10 +600,21 @@ void MemoryEditor::Input()
                     cursorEndIndex = 0;
                 }
 
-                if (cursorEndIndex < initialAddress)
+                ResetInitialAddress(BREAKTHROUGH_ENDINDEX);
+            }
+            else if (isCtrlDown)
+            {
+                /*
+                    EXPLAIN:
+                    Just move up one page, or go to the first cell if that's not possible
+                */
+                cursorStartIndex = initialAddress - PAGE_ROWS * PAGE_COLUMNS + (cursorStartIndex & 0x0F);
+                if (cursorStartIndex < 0)
                 {
-                    initialAddress -= PAGE_COLUMNS;
+                    cursorStartIndex = 0;
                 }
+                cursorEndIndex = cursorStartIndex;
+                ResetInitialAddress(BREAKTHROUGH_STARTINDEX);
             }
             else 
             {
@@ -633,20 +648,13 @@ void MemoryEditor::Input()
                 // When we reset when cursor is oving up to the previous screen, we want maximum
                 // visibility for the user, so initialAddress should be PAGE_ROWS rows away
                 // cursorStartIndex
-                if (cursorStartIndex < initialAddress)
-                {
-                    initialAddress = cursorStartIndex - PAGE_ROWS * PAGE_COLUMNS;
-                    if (initialAddress < 0)
-                    {
-                        initialAddress = 0;
-                    }
-                }
+                ResetInitialAddress(BREAKTHROUGH_STARTINDEX);
             }
         }
     }
 }
 
-int64_t MemoryEditor::Calculate_MaxInitialAddress()
+int64_t MemoryEditor::CalculateMaxInitialAddress()
 {
     /*
         EXPLAIN:
@@ -670,5 +678,58 @@ int64_t MemoryEditor::Calculate_MaxInitialAddress()
     else
     {
         return maxInitialAddress;
+    }
+}
+
+void MemoryEditor::ResetInitialAddress(enum BREAKTHROUGH_TYPE bType)
+{
+    /*
+        Call this function AFTER you changed cursorStartIndex/cursorEndIndex
+    */
+
+    if (bType == BREAKTHROUGH_STARTINDEX)
+    {
+        if (cursorStartIndex < initialAddress)
+        {
+            /*
+                EXPLAIN:
+                Now we are probably breaking UP (to a lower address page)
+            */
+            
+            initialAddress = (cursorStartIndex & (int64_t)0xFFFFFFFFFFFFFFF0) - (PAGE_ROWS - 1) * PAGE_COLUMNS;
+            if (initialAddress < 0)
+            {
+                initialAddress = 0;
+            }
+        }
+        else if (cursorStartIndex >= initialAddress + PAGE_ROWS * PAGE_COLUMNS)
+        {
+            /*
+                EXPLAIN:
+                Now we are probably breaking DOWN (to a higher address page)
+            */
+
+            initialAddress = cursorStartIndex & (int64_t)0xFFFFFFFFFFFFFFF0;
+            if (initialAddress > maxInitialAddress)
+            {
+                initialAddress = maxInitialAddress;
+            }
+        }
+    }
+    else if (bType == BREAKTHROUGH_ENDINDEX)
+    {
+        if (cursorEndIndex < initialAddress)
+        {
+            // initialAddress -= PAGE_COLUMNS;
+            initialAddress = initialAddress - (PAGE_ROWS - 1) * PAGE_COLUMNS;
+            if (initialAddress < 0)
+            {
+                initialAddress = 0;
+            }
+        }
+        else if (cursorEndIndex >= initialAddress + PAGE_ROWS * PAGE_COLUMNS)
+        {
+            initialAddress += PAGE_COLUMNS;
+        }
     }
 }

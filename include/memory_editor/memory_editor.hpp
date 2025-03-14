@@ -7,6 +7,12 @@
 #define PAGE_COLUMNS    16
 #define PAGE_ROWS       32
 
+enum BREAKTHROUGH_TYPE
+{
+    BREAKTHROUGH_STARTINDEX = 0,
+    BREAKTHROUGH_ENDINDEX
+};
+
 struct charGlyph
 {
     unsigned char ch;
@@ -46,6 +52,8 @@ public:
     int64_t cursorEndBoundary;
 
     bool readOnly;
+
+    ImFont* font;
     int fontSize;
 
     ImDrawList* drawList;
@@ -59,5 +67,8 @@ public:
     void Input();
 
     // Utility functions
-    int64_t Calculate_MaxInitialAddress();
+    int64_t CalculateMaxInitialAddress();
+    /* TODO: Read README.md and implement this */
+    // NOTE: Actually might not be possible because both startIndex and endIndex can break up and down
+    void ResetInitialAddress(enum BREAKTHROUGH_TYPE);
 };

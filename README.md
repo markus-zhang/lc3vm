@@ -210,6 +210,8 @@ OK since I have reached a milestone I'm going to put this project on hold for th
 
 * initialAddress now gets adjusted when cursorStartIndex moves out of boundary when we move up/down. For example if we move the cursor down one row, and it goes out of the windows boundary, we need to increment initialAddress for PAGE_COLUMNS so that the whole window moves down for one row too. We always try to maximize the view for the user (e.g. when user moves up the cursor when he is at the top view, we increase initialAddress by a whole PAGE so that the user gets a full page of view and now the cursor is at the bottom of the view, and when the user moves the cursor DOWN, we put the cursor at the top of the next view so he still gets a full page)
 
++ (Follow-up of previous note) Is there a better way to reset initialAddress and put it into a function instead of scattering all over the program? I'm thinking about something like this: First we detect from which direction (up or down) we are breaking through the screen boundary (initialAddress to initialAddress + PAGE - 1), and deal with it accordingly.
+
 + Need to load a different font to display Unicode such as visible space `␣`
 
 + Think about other windows that we need for a hex editor (like a window with implied file format, md65 hashed, etc.)
@@ -217,3 +219,19 @@ OK since I have reached a milestone I'm going to put this project on hold for th
 + Think about a way to encode file structure (e.g. midi file should have its header, sequences, etc.). Each file format has completely different "sections" but all sections should be able to have differen color
 
 + Think about a way to limit cursor movement (e.g. lock the cursor within the same section)
+
+### 2025-03-14
+
+* Put reseting initialAddress into a function and fixed a couple of its bugs
+
++ Add some other stuffs in the hex window:
+    + The current selected range and its size
+    + An option button to open the option window??
+    + An input box to enter an address, or a saved location to jump to
+
++ Research how to paint selected cells as unfilled rectangles -- "borders", not as filled ones, this is for the next bulletpoint -> if we already have some coloring patterns on, adding another layer of filled rectangles doesn't work very well, it's a lot easier to recognize by eyes if they have "borders"
+
++ Meta data for cell groups
+    + For example, cell 0x0010 ~ 0x02f0 belongs to the header, and should be colored as blue on red rectangles
+    + We need an option to goggle meta data on/off, sometimes users only want to see the whole picture as flat data, not as groups of cells
+    + When meta data is turned on, double click should automatically select the group of cell it is in
