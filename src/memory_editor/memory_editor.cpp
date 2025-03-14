@@ -66,6 +66,10 @@ MemoryEditor::MemoryEditor()
     cursorStartIndex = 0;
     cursorEndIndex = 0;
     initialAddress = 0;
+    minInitialAddress = 0;
+    maxInitialAddress = 0;
+    cursorStartBoundary = 0;
+    cursorEndBoundary = 0;
     drawList = nullptr;
 }
 
@@ -94,6 +98,12 @@ MemoryEditor::MemoryEditor(uint8_t* memory, uint64_t memorySize, const ImGuiWind
     cursorStartIndex    = 0;
     cursorEndIndex      = 0;
     initialAddress      = 0;
+
+    minInitialAddress   = 0;
+    maxInitialAddress   = Calculate_MaxInitialAddress();
+    cursorStartBoundary = 0;
+    cursorEndBoundary   = bufferSize - 1;
+    printf("Max Initial Address is: %06x\n", maxInitialAddress);
 }
 
 void MemoryEditor::Draw()
@@ -357,7 +367,7 @@ void MemoryEditor::Input()
         Check this piece of code for reference:
         https://github.com/WerWolv/ImHex/blob/00cf8ecb18b2024ba375c353ce9680d33512f65a/libs/ImGui/include/imgui_memory_editor.h#L260
 
-        FIXME: Move initialAddress if any of the selected area reaches off screen addresses
+        Move initialAddress if any of the selected area reaches off screen addresses
     */
 
     if (ImGui::IsWindowFocused())
@@ -429,13 +439,15 @@ void MemoryEditor::Input()
                 if (cursorStartIndex < bufferSize - 1)
                 {
                     cursorStartIndex += 1;
-                    cursorEndIndex = cursorStartIndex;
                 }
 
                 if (cursorStartIndex >= (initialAddress + PAGE_ROWS * PAGE_COLUMNS))
                 {
                     initialAddress += PAGE_COLUMNS;
                 }
+
+                // Always reset cursorEndIndex, just in case there are multiple selected cells
+                cursorEndIndex = cursorStartIndex;
             }
         }
 
@@ -485,13 +497,14 @@ void MemoryEditor::Input()
                 if (cursorStartIndex > 0)
                 {
                     cursorStartIndex -= 1;
-                    cursorEndIndex = cursorStartIndex;
 
                     if (cursorStartIndex < initialAddress)
                     {
                         initialAddress -= PAGE_COLUMNS;
                     }
                 }
+                // Always reset cursorEndIndex, just in case there are multiple selected cells
+                cursorEndIndex = cursorStartIndex;
             }
         }
 
@@ -506,7 +519,7 @@ void MemoryEditor::Input()
                     if cursorEndIndex >= cursorStartIndex, no need to reset
 
                     We need to adjust initialAddress as we are now moving vertically --
-                    
+
                 */
 
                 if (cursorEndIndex + 16 <= bufferSize - 1)
@@ -516,6 +529,11 @@ void MemoryEditor::Input()
                 else
                 {
                     cursorEndIndex = bufferSize - 1;
+                }
+
+                if (cursorEndIndex >= initialAddress + PAGE_ROWS * PAGE_COLUMNS)
+                {
+                    initialAddress += PAGE_COLUMNS;
                 }
             }
             else
@@ -537,11 +555,22 @@ void MemoryEditor::Input()
                     {
                         cursorStartIndex += 16;
                     }
-                    cursorEndIndex = cursorStartIndex;
 
-                    if (cursorStartIndex >= initialAddress + PAGE_ROWS * PAGE_COLUMNS)
+                    // if (cursorStartIndex >= initialAddress + PAGE_ROWS * PAGE_COLUMNS)
+                    // {
+                    //     initialAddress += PAGE_COLUMNS;
+                    // }
+                }
+                // Always reset cursorEndIndex, just in case there are multiple selected cells
+                cursorEndIndex = cursorStartIndex;
+
+                // Reset initialAddress based on cursorStartIndex if out of window
+                if (cursorStartIndex >= initialAddress + PAGE_ROWS * PAGE_COLUMNS)
+                {
+                    initialAddress = cursorStartIndex & (int64_t)0xFFFFFFFFFFFFFFF0;
+                    if (initialAddress > maxInitialAddress)
                     {
-                        initialAddress += PAGE_COLUMNS;
+                        initialAddress = maxInitialAddress;
                     }
                 }
             }
@@ -554,6 +583,8 @@ void MemoryEditor::Input()
                 /*
                     EXPLAIN:
                     SHIFT + UP ARROW = adding the previous 16 cells after cursorEndIndex into selection
+
+                    We also need to move initialAddress up one row if needed
                 */
 
                 if (cursorEndIndex - 16 >= 0)
@@ -563,6 +594,11 @@ void MemoryEditor::Input()
                 else
                 {
                     cursorEndIndex = 0;
+                }
+
+                if (cursorEndIndex < initialAddress)
+                {
+                    initialAddress -= PAGE_COLUMNS;
                 }
             }
             else 
@@ -584,14 +620,55 @@ void MemoryEditor::Input()
                     {
                         cursorStartIndex -= 16;
                     }
-                    cursorEndIndex = cursorStartIndex;
 
-                    if (cursorStartIndex < initialAddress)
+                    // if (cursorStartIndex < initialAddress)
+                    // {
+                    //     initialAddress -= PAGE_COLUMNS;
+                    // }
+                }
+                // Always reset cursorEndIndex, just in case there are multiple selected cells
+                cursorEndIndex = cursorStartIndex;
+
+                // Reset initialAddress based on cursorStartIndex if out of window
+                // When we reset when cursor is oving up to the previous screen, we want maximum
+                // visibility for the user, so initialAddress should be PAGE_ROWS rows away
+                // cursorStartIndex
+                if (cursorStartIndex < initialAddress)
+                {
+                    initialAddress = cursorStartIndex - PAGE_ROWS * PAGE_COLUMNS;
+                    if (initialAddress < 0)
                     {
-                        initialAddress -= PAGE_COLUMNS;
+                        initialAddress = 0;
                     }
                 }
             }
         }
+    }
+}
+
+int64_t MemoryEditor::Calculate_MaxInitialAddress()
+{
+    /*
+        EXPLAIN:
+        First, we go back to the first cell of the last row, because we already know bufferSize;
+        Next, we try to go up 31 (which is PAGE_ROWS - 1) rows;
+        And if it becomes negative, we just set it to 0 (whole buffer is less than one page)
+    */
+    
+    if (bufferSize <= PAGE_ROWS * PAGE_COLUMNS)
+    {
+        return 0;
+    }
+
+    int64_t maxInitialAddress = (bufferSize - 1) & (int64_t)0xFFFFFFFFFFFFFFF0;
+    maxInitialAddress -= (PAGE_COLUMNS * (PAGE_ROWS - 1));
+
+    if (maxInitialAddress < 0)
+    {
+        return 0;
+    }
+    else
+    {
+        return maxInitialAddress;
     }
 }

@@ -208,7 +208,7 @@ OK since I have reached a milestone I'm going to put this project on hold for th
 
 * Modified memory_editor so that it can handle larger files (larger than one page)
 
-- Immediate: Find all places that need to adjust initialAddress (the view window). For example if we move the cursor down one row, and it goes out of the windows boundary, we need to increment initialAddress for PAGE_COLUMNS so that the whole window moves down for one row too
+* initialAddress now gets adjusted when cursorStartIndex moves out of boundary when we move up/down. For example if we move the cursor down one row, and it goes out of the windows boundary, we need to increment initialAddress for PAGE_COLUMNS so that the whole window moves down for one row too. We always try to maximize the view for the user (e.g. when user moves up the cursor when he is at the top view, we increase initialAddress by a whole PAGE so that the user gets a full page of view and now the cursor is at the bottom of the view, and when the user moves the cursor DOWN, we put the cursor at the top of the next view so he still gets a full page)
 
 + Need to load a different font to display Unicode such as visible space `␣`
 

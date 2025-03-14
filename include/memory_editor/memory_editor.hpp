@@ -38,6 +38,13 @@ public:
     int64_t cursorEndIndex;
     int64_t initialAddress;
 
+    int64_t minInitialAddress;
+    int64_t maxInitialAddress;
+
+    // TODO: For future lock feature: user maybe only want to manipulate the cursor withint a structure
+    int64_t cursorStartBoundary;
+    int64_t cursorEndBoundary;
+
     bool readOnly;
     int fontSize;
 
@@ -50,4 +57,7 @@ public:
 
     void Draw();
     void Input();
+
+    // Utility functions
+    int64_t Calculate_MaxInitialAddress();
 };
