@@ -224,6 +224,8 @@ OK since I have reached a milestone I'm going to put this project on hold for th
 
 * Put reseting initialAddress into a function and fixed a couple of its bugs
 
+* Added a basic scrollbar. Damn I don't really like the ImGui style scrollbar so I'll add my own.
+
 + Add some other stuffs in the hex window:
     + The current selected range and its size
     + An option button to open the option window??

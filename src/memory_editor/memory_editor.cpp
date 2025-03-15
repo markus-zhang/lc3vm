@@ -113,7 +113,7 @@ MemoryEditor::MemoryEditor(uint8_t* memory, uint64_t memorySize, const ImGuiWind
 void MemoryEditor::Draw()
 {
     ImGui::GetStyle().WindowBorderSize = 2.0f;
-    ImGui::SetNextWindowPos(winPos);
+    // ImGui::SetNextWindowPos(winPos);
     ImGui::SetNextWindowSizeConstraints(minWindowSize, initialWindowSize);
 
     /*
@@ -360,6 +360,11 @@ void MemoryEditor::Draw()
 
         ImGui::PopStyleColor();
     }
+
+    // TODO: Draw scrollbar
+    DrawScrollBar(drawList, ImVec2(848, 44), ImVec2(872, 680));
+
+    DrawScrollBarSlider(drawList, ImVec2(848, 44), ImVec2(872, 680));
 
     ImGui::End();
 }
@@ -732,4 +737,47 @@ void MemoryEditor::ResetInitialAddress(enum BREAKTHROUGH_TYPE bType)
             initialAddress += PAGE_COLUMNS;
         }
     }
+}
+
+void MemoryEditor::DrawScrollBar(ImDrawList* drawList, ImVec2 upperLeft, ImVec2 lowerRight)
+{
+    /*
+        EXPLAIN:
+        This function insert two items into the drawList (which MUST be passed from Draw())
+        - A solid color scrollbar as a rectangle
+        - A solid color scrollbar current-page indicator as a small rectangle on top of above
+    */
+
+    if (drawList == nullptr)
+    {
+        fprintf(stderr, "drawList is NULL!\n");
+        return;
+    }
+
+    // FIXME: Just a test to find the best upperLeft coordinates
+    drawList->AddRect(upperLeft, lowerRight, IM_COL32(150, 50, 50, 255));
+}
+
+void MemoryEditor::DrawScrollBarSlider(ImDrawList* drawList, ImVec2 upperLeft, ImVec2 lowerRight)
+{
+    /*
+        EXPLAIN:
+        The size of the slider depends on size of buffer / size of one page (512 bytes)
+        But we probably want a minimum size of, say, 4 pixels?
+        Also, a maximum of, say, 64 pixels?
+    */
+    int64_t size = (int64_t)(lowerRight.y - upperLeft.y) * PAGE_ROWS * PAGE_COLUMNS / bufferSize;
+
+    if (size < MIN_SLIDER_SIZE)
+    {
+        size = MIN_SLIDER_SIZE;
+    }
+    else if (size > MAX_SLIDER_SIZE)
+    {
+        size = MAX_SLIDER_SIZE;
+    }
+
+    int64_t yOffset = (int64_t)(lowerRight.y - upperLeft.y) * initialAddress / bufferSize;
+
+    drawList->AddRectFilled(ImVec2(upperLeft.x, upperLeft.y + yOffset), ImVec2(lowerRight.x, upperLeft.y + size + yOffset), IM_COL32(255, 255, 255, 255));
 }

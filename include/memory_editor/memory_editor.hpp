@@ -7,6 +7,9 @@
 #define PAGE_COLUMNS    16
 #define PAGE_ROWS       32
 
+#define MIN_SLIDER_SIZE 8
+#define MAX_SLIDER_SIZE 128
+
 enum BREAKTHROUGH_TYPE
 {
     BREAKTHROUGH_STARTINDEX = 0,
@@ -71,4 +74,6 @@ public:
     /* TODO: Read README.md and implement this */
     // NOTE: Actually might not be possible because both startIndex and endIndex can break up and down
     void ResetInitialAddress(enum BREAKTHROUGH_TYPE);
+    void DrawScrollBar(ImDrawList* drawList, ImVec2 upperLeft, ImVec2 lowerRight);
+    void DrawScrollBarSlider(ImDrawList* drawList, ImVec2 upperLeft, ImVec2 lowerRight);
 };
