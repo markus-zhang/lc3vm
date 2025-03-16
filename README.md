@@ -232,8 +232,17 @@ OK since I have reached a milestone I'm going to put this project on hold for th
     + An input box to enter an address, or a saved location to jump to
 
 + Research how to paint selected cells as unfilled rectangles -- "borders", not as filled ones, this is for the next bulletpoint -> if we already have some coloring patterns on, adding another layer of filled rectangles doesn't work very well, it's a lot easier to recognize by eyes if they have "borders"
+    + I think it works like this: if it's minIndex, then draw the left vertical line, two horizontal lines, otherwise always just draw the two horizontal lines, if it's maxIndex, draw two horizontal lines and the right vertical line.
 
 + Meta data for cell groups
     + For example, cell 0x0010 ~ 0x02f0 belongs to the header, and should be colored as blue on red rectangles
     + We need an option to goggle meta data on/off, sometimes users only want to see the whole picture as flat data, not as groups of cells
     + When meta data is turned on, double click should automatically select the group of cell it is in
+
+### 2025-03-15
+
+OK I need to think through all these features -- since I need this tool to make a CPU emulator/simulator, I don't need all those features, do I?
+
+* Implement a readonly toggle
+
+* Implement +/- keys to change the value of selected bytes

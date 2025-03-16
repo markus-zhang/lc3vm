@@ -264,7 +264,6 @@ void MemoryEditor::Draw()
 
             if (i >= cursorMinIndex && i <= cursorMaxIndex)
             {
-                // TODO: Switch the background and foreground colors of the cells "selected"
                 ImGui::SameLine();
                 ImVec2 cursorPosUpperLeft = ImGui::GetCursorScreenPos();
                 ImVec2 cursorPosLowerRight = ImVec2(cursorPosUpperLeft.x + textSize.x, cursorPosUpperLeft.y + textSize.y);
@@ -320,7 +319,6 @@ void MemoryEditor::Draw()
 
                     if (j >= cursorMinIndex && j <= cursorMaxIndex)
                     {
-                        // TODO: Switch the background and foreground colors of the cells "selected"
                         ImVec2 cursorPosUpperLeft = ImGui::GetCursorScreenPos();
                         ImVec2 asciiTextSize = ImGui::CalcTextSize(" 0");
                         ImVec2 cursorPosLowerRight = ImVec2(cursorPosUpperLeft.x + asciiTextSize.x, cursorPosUpperLeft.y + asciiTextSize.y);
@@ -329,8 +327,6 @@ void MemoryEditor::Draw()
 
                         ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 255, 0, 255));
                         // FIXME: Use a different font to display Unicode
-                        // ImGuiIO& io = ImGui::GetIO();
-                        // io.Fonts->AddFontFromFileTTF("path/to/NotoSans-Regular.ttf", 18.0f, nullptr, io.Fonts->GetGlyphRangesDefault());
                         if (ascii == ' ')
                         {
                             ImGui::Text("\xE2\x90\xA3");
@@ -361,10 +357,26 @@ void MemoryEditor::Draw()
         ImGui::PopStyleColor();
     }
 
-    // TODO: Draw scrollbar
     DrawScrollBar(drawList, ImVec2(848, 44), ImVec2(872, 680));
 
     DrawScrollBarSlider(drawList, ImVec2(848, 44), ImVec2(872, 680));
+
+    ImGui::Separator();
+
+    if (ImGui::Button("Toggle Read-Only"))
+    {
+        readOnly = !readOnly;
+    }
+
+    ImGui::SameLine();
+    if (readOnly)
+    {
+        ImGui::TextColored(ImVec4(255, 0, 0, 255), "READ-ONLY MODE");
+    }
+    else
+    {
+        ImGui::TextColored(ImVec4(0, 255, 0, 255), "WRITE-READ MODE");
+    }
 
     ImGui::End();
 }
@@ -656,6 +668,16 @@ void MemoryEditor::Input()
                 ResetInitialAddress(BREAKTHROUGH_STARTINDEX);
             }
         }
+
+        if (ImGui::IsKeyPressed(ImGuiKey_KeypadAdd))
+        {
+            buffer[cursorStartIndex].ch += 1;
+        }
+
+        if (ImGui::IsKeyPressed(ImGuiKey_KeypadSubtract))
+        {
+            buffer[cursorStartIndex].ch -= 1;
+        }
     }
 }
 
@@ -766,18 +788,18 @@ void MemoryEditor::DrawScrollBarSlider(ImDrawList* drawList, ImVec2 upperLeft, I
         But we probably want a minimum size of, say, 4 pixels?
         Also, a maximum of, say, 64 pixels?
     */
-    int64_t size = (int64_t)(lowerRight.y - upperLeft.y) * PAGE_ROWS * PAGE_COLUMNS / bufferSize;
+    int64_t size = (int64_t)(lowerRight.y - upperLeft.y) * PAGE_ROWS * PAGE_COLUMNS / (bufferSize | 0x0F);
 
     if (size < MIN_SLIDER_SIZE)
     {
         size = MIN_SLIDER_SIZE;
     }
-    else if (size > MAX_SLIDER_SIZE)
-    {
-        size = MAX_SLIDER_SIZE;
-    }
+    // else if (size > MAX_SLIDER_SIZE)
+    // {
+    //     size = MAX_SLIDER_SIZE;
+    // }
 
-    int64_t yOffset = (int64_t)(lowerRight.y - upperLeft.y) * initialAddress / bufferSize;
+    int64_t yOffset = (int64_t)(lowerRight.y - upperLeft.y) * initialAddress / (bufferSize | 0x0F);
 
-    drawList->AddRectFilled(ImVec2(upperLeft.x, upperLeft.y + yOffset), ImVec2(lowerRight.x, upperLeft.y + size + yOffset), IM_COL32(255, 255, 255, 255));
+    drawList->AddRectFilled(ImVec2(upperLeft.x, upperLeft.y + yOffset), ImVec2(lowerRight.x, upperLeft.y + size + yOffset), IM_COL32(125, 125, 125, 255));
 }
