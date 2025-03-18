@@ -266,6 +266,8 @@ void MemoryEditor::Draw()
             {
                 ImGui::SameLine();
                 ImVec2 cursorPosUpperLeft = ImGui::GetCursorScreenPos();
+                ImVec2 cursorPosLowerLeft = ImVec2(cursorPosUpperLeft.x, cursorPosUpperLeft.y + textSize.y);
+                ImVec2 cursorPosUpperRight = ImVec2(cursorPosUpperLeft.x + textSize.x, cursorPosUpperLeft.y);
                 ImVec2 cursorPosLowerRight = ImVec2(cursorPosUpperLeft.x + textSize.x, cursorPosUpperLeft.y + textSize.y);
                 /* 
                     TODO: 
@@ -274,7 +276,18 @@ void MemoryEditor::Draw()
                     - What if we need to draw multiple lines?
                     - Actually, for the first cell of second row, how do we draw a cell without both left and right borders?
                 */
-                drawList->AddRectFilled(cursorPosUpperLeft, cursorPosLowerRight, IM_COL32(125, 175, 175, 100));
+                // drawList->AddRectFilled(cursorPosUpperLeft, cursorPosLowerRight, IM_COL32(125, 175, 175, 100));
+                if ( i == cursorMinIndex)
+                {
+                    drawList->AddLine(cursorPosUpperLeft, cursorPosLowerLeft, IM_COL32(255, 255, 255, 255));
+                }
+                drawList->AddLine(cursorPosUpperLeft, cursorPosUpperRight, IM_COL32(255, 255, 255, 255));
+                drawList->AddLine(cursorPosLowerLeft, cursorPosLowerRight, IM_COL32(255, 255, 255, 255));
+                if ( i == cursorMaxIndex)
+                {
+                    drawList->AddLine(cursorPosUpperRight, cursorPosLowerRight, IM_COL32(255, 255, 255, 255));
+                }
+
                 ImGui::SameLine();
             }
 
@@ -321,9 +334,22 @@ void MemoryEditor::Draw()
                     {
                         ImVec2 cursorPosUpperLeft = ImGui::GetCursorScreenPos();
                         ImVec2 asciiTextSize = ImGui::CalcTextSize(" 0");
+                        ImVec2 cursorPosLowerLeft = ImVec2(cursorPosUpperLeft.x, cursorPosUpperLeft.y + asciiTextSize.y);
+                        ImVec2 cursorPosUpperRight = ImVec2(cursorPosUpperLeft.x + asciiTextSize.x, cursorPosUpperLeft.y);
                         ImVec2 cursorPosLowerRight = ImVec2(cursorPosUpperLeft.x + asciiTextSize.x, cursorPosUpperLeft.y + asciiTextSize.y);
                         // Some sort of light blue rectangle
-                        drawList->AddRectFilled(cursorPosUpperLeft, cursorPosLowerRight, IM_COL32(125, 175, 175, 100));
+                        // drawList->AddRectFilled(cursorPosUpperLeft, cursorPosLowerRight, IM_COL32(125, 175, 175, 100));
+                        if ( j == cursorMinIndex)
+                        {
+                            drawList->AddLine(cursorPosUpperLeft, cursorPosLowerLeft, IM_COL32(255, 255, 255, 255));
+                        }
+                        drawList->AddLine(cursorPosUpperLeft, cursorPosUpperRight, IM_COL32(255, 255, 255, 255));
+                        drawList->AddLine(cursorPosLowerLeft, cursorPosLowerRight, IM_COL32(255, 255, 255, 255));
+                        if ( j == cursorMaxIndex)
+                        {
+                            drawList->AddLine(cursorPosUpperRight, cursorPosLowerRight, IM_COL32(255, 255, 255, 255));
+                        }
+                        // drawList->AddLine(cursorPosUpperLeft, cursorPosLowerLeft, IM_COL32(255, 255, 255, 255));
 
                         ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 255, 0, 255));
                         // FIXME: Use a different font to display Unicode
@@ -669,14 +695,17 @@ void MemoryEditor::Input()
             }
         }
 
-        if (ImGui::IsKeyPressed(ImGuiKey_KeypadAdd))
+        if (!readOnly)
         {
-            buffer[cursorStartIndex].ch += 1;
-        }
+            if (ImGui::IsKeyPressed(ImGuiKey_KeypadAdd))
+            {
+                buffer[cursorStartIndex].ch += 1;
+            }
 
-        if (ImGui::IsKeyPressed(ImGuiKey_KeypadSubtract))
-        {
-            buffer[cursorStartIndex].ch -= 1;
+            if (ImGui::IsKeyPressed(ImGuiKey_KeypadSubtract))
+            {
+                buffer[cursorStartIndex].ch -= 1;
+            }
         }
     }
 }

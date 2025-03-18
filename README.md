@@ -246,3 +246,23 @@ OK I need to think through all these features -- since I need this tool to make 
 * Implement a readonly toggle
 
 * Implement +/- keys to change the value of selected bytes
+
+### 2025-03-17
+
+OK I decided to do some research -> the reason is, if I use highlight colors for selected cells, the colors may conflict with the meta data colors, so I gotta use borders to "highlight" them.
+
+* Done researching how to paint selected cells as unfilled rectangles -- "borders", not as filled ones, this is for the next bulletpoint -> if we already have some coloring patterns on, adding another layer of filled rectangles doesn't work very well, it's a lot easier to recognize by eyes if they have "borders".
+
+Right now the borders of the ASCII look a little bit broken but I guess I'm OK with that.
+
++ How to implement the meta data? I need some examples to think through.
+    + Looks like most of the binary formats are like this (simplified view):
+        + You have a magic number
+        + Then you have something that describe the number of sections
+        + For each section you also have a header that tells its length
+        + And then data is embedded after the header
+
+    + The scripting language should do this:
+        + Define each "part", like magic number, header, etc.
+        + Can evaluate values in the bytes and create new "parts" - e.g. read the byte to find the total number of sections
+        + Can move around in bytes, e.g. `int32 numSections = read(4);`, this also means we need to track where the read starts
