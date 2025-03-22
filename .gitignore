@@ -8,6 +8,8 @@
 !/src/*.asm
 !/src/memory_editor
 !/src/memory_editor/*.cpp
+!/src/midi_player
+!/src/midi_player/*.cpp
 
 # add back other folders
 !/assets/
@@ -17,6 +19,8 @@
 !/include/*.hpp
 !/include/memory_editor
 !/include/memory_editor/*.hpp
+!/include/midi_player
+!/include/midi_player/*.hpp
 
 # add back binary
 !*.obj

@@ -266,3 +266,7 @@ Right now the borders of the ASCII look a little bit broken but I guess I'm OK w
         + Define each "part", like magic number, header, etc.
         + Can evaluate values in the bytes and create new "parts" - e.g. read the byte to find the total number of sections
         + Can move around in bytes, e.g. `int32 numSections = read(4);`, this also means we need to track where the read starts
+
+### 2025-03-19
+
++ Thinking about the meta language
