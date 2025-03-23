@@ -9,7 +9,9 @@
 #include <vector>
 
 uint16_t Swap16Endian(uint16_t value);
-uint16_t Swap32Endian(uint16_t value);
+uint32_t Swap32Endian(uint32_t value);
+
+struct MidiEvent ReadMidiEvent(uint8_t* buffer);
 
 struct __attribute__((packed)) MidiHeaderChunk
 {
@@ -19,7 +21,7 @@ struct __attribute__((packed)) MidiHeaderChunk
     uint16_t headerNumTracks;
     uint16_t headerTimeDivision;
 
-    void LoadHeader(const uint8_t* buffer)
+    uint8_t* LoadHeader(uint8_t* buffer)
     {
         headerChunkId = *((uint32_t*)buffer);
         printf("ChunkId is: 0x%x\n", headerChunkId);
@@ -51,6 +53,10 @@ struct __attribute__((packed)) MidiHeaderChunk
         {
             fprintf(stderr, "Midi Header Validation Failed!\n");
         }
+
+        printf("buffer pointer at: 0x%x\n", *((uint8_t*)buffer));
+
+        return buffer;
     }
 
 private:
@@ -82,7 +88,112 @@ struct __attribute__((packed)) MidiTrackChunk
 {
     uint32_t trackChunkId;
     uint32_t trackChunkSize;
-    MidiEvent* events;
+    MidiEvent events[512];
+    uint16_t eventCount;
+
+    uint8_t* LoadTrack(uint8_t* buffer)
+    {
+        trackChunkId = *((uint32_t*)buffer);
+        printf("trackChunkId is: 0x%x\n", trackChunkId);
+        buffer += sizeof(trackChunkId);
+
+        trackChunkSize = Swap32Endian(*((uint32_t*)buffer));
+        printf("trackChunkSize is: 0x%x\n", trackChunkSize);
+        buffer += sizeof(trackChunkSize);
+
+        uint8_t* p = buffer;
+
+        eventCount = 0;
+        while (p < buffer + trackChunkSize)
+        {
+            events[eventCount] = ReadMidiEvent(&p);
+        }
+        printf("Number of events: %d\n", eventCount);
+    }
+
+private:
+    struct MidiEvent ReadMidiEvent(uint8_t** buffer)
+    {
+        /*
+            buffer should point to the first byte of the first midi event (of a track chunk)
+        */
+
+        MidiEvent me;
+
+        /*  
+            EXPLAIN:
+            Variable length Delta Time
+            - If the top bit is 0, then this byte is the last byte
+            - If the top bit is 1, then this byte is not the last byte
+            - top bits are not used in calculation
+
+            e.g. 81 48 
+            This gives 10000001 01001000, so the second byte is the last byte.
+            Throwing away both top bits, this gives us
+            0000001 1001000 -> 11001000 which is 0xC8 = 200 in decimal
+
+            e.g. 8C 81 48
+            10001100 10000001 01001000
+            ->
+            1100 0000001 1001000
+            Looks like the algorithm below is correct:
+            - 1100 is shifted 2 * 7 bits = 14 bits
+            - 1 is shifted 7 bites
+            - 1001000 not shifted
+            result = 110000000011001000
+
+            byte b = read_one_byte();
+            int32_t result = 0;
+            while (true)
+            {
+                result << 7;
+                result += (b & 0x7F);
+                if (b.top_bit == 0)
+                {
+                    break;
+                }
+            }
+        */
+
+        uint32_t dt = 0;
+        while (true)
+        {
+            uint8_t byte = *(*((uint8_t**)buffer));
+            
+            dt = dt << 7;
+            dt += (byte & 0x7F);
+
+            if ((byte & 0x80) == 0)
+            {
+                break;
+            }
+
+            (*buffer) += 1;
+        }
+
+        printf("Delta Time extracted as: 0x%x\n", dt);
+        me.deltaTimes = dt;
+
+        // TODO: eventType
+
+        return me;
+    }
+};
+
+
+struct __attribute__((packed)) MidiEvent
+{
+    /*
+        EXPLAIN:
+        Delta Time 	    Event Type Value 	MIDI Channel 	Parameter 1 	Parameter 2
+        variable-length 	4 bits 	            4 bits 	        1 byte 	        1 byte
+    */
+    // deltaTimaes maximum 28-bit
+    uint32_t deltaTimes;
+    uint8_t eventType;
+    uint8_t midiChannel;
+    uint8_t para1;
+    uint8_t para2;
 };
 
 // class MidiPlayerBackend
@@ -122,7 +233,11 @@ int main()
 
     MidiHeaderChunk headerChunk;
 
-    headerChunk.LoadHeader(buffer);
+    buffer = headerChunk.LoadHeader(buffer);
+
+    uint8_t test[3] = {0x81, 0x48, 0x90};
+
+    ReadMidiEvent(test);
 
     return 0;
 }
@@ -132,7 +247,72 @@ uint16_t Swap16Endian(uint16_t value)
     return ((value & 0x00FF) << 8) | ((value >> 8));
 }
 
-uint16_t Swap32Endian(uint16_t value)
+uint32_t Swap32Endian(uint32_t value)
 {
-    return ((value & 0x00FF) << 8) | ((value >> 8));
+    return ((value & 0xFF) << 24) | (((value >> 8) & 0xFF) << 16) | (((value >> 16) & 0xFF) << 8) | (value >> 24);
+}
+
+struct MidiEvent ReadMidiEvent(uint8_t* buffer)
+{
+    /*
+        buffer should point to the first byte of the first midi event (of a track chunk)
+    */
+
+    MidiEvent me;
+
+    /*  
+        EXPLAIN:
+        Variable length Delta Time
+        - If the top bit is 0, then this byte is the last byte
+        - If the top bit is 1, then this byte is not the last byte
+        - top bits are not used in calculation
+
+        e.g. 81 48 
+        This gives 10000001 01001000, so the second byte is the last byte.
+        Throwing away both top bits, this gives us
+        0000001 1001000 -> 11001000 which is 0xC8 = 200 in decimal
+
+        e.g. 8C 81 48
+        10001100 10000001 01001000
+        ->
+        1100 0000001 1001000
+        Looks like the algorithm below is correct:
+        - 1100 is shifted 2 * 7 bits = 14 bits
+        - 1 is shifted 7 bites
+        - 1001000 not shifted
+        result = 110000000011001000
+
+        byte b = read_one_byte();
+        int32_t result = 0;
+        while (true)
+        {
+            result << 7;
+            result += (b & 0x7F);
+            if (b.top_bit == 0)
+            {
+                break;
+            }
+        }
+    */
+
+    uint32_t dt = 0;
+    while (true)
+    {
+        uint8_t byte = *((uint8_t*)buffer);
+        
+        dt = dt << 7;
+        dt += (byte & 0x7F);
+
+        if ((byte & 0x80) == 0)
+        {
+            break;
+        }
+
+        buffer += 1;
+    }
+
+    printf("Delta Time extracted as: 0x%x\n", dt);
+    me.deltaTimes = dt;
+
+    return me;
 }
