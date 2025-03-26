@@ -8,10 +8,24 @@
 #include <string>
 #include <vector>
 
+enum MidiEventType
+{
+    MIDI_EVENT_NOTE_OFF = 0x8,
+    MIDI_EVENT_NOTE_ON = 0x9,
+    MIDI_EVENT_NOTE_AFTERTOUCH = 0xA,
+    MIDI_EVENT_CONTROLLER = 0xB,
+    MIDI_EVENT_PROGRAM_CHANGE = 0xC,
+    MIDI_EVENT_CHANNEL_AFTERTOUCH = 0xD,
+    MIDI_EVENT_PITCH_BEND = 0xE,
+    MIDI_EVENT_META = 0xFF,
+    MIDI_EVENT_SYSEX_DIVIDED = 0xF0,
+    MIDI_EVENT_SYSEX_AUTH = 0xF7
+};
+
 uint16_t Swap16Endian(uint16_t value);
 uint32_t Swap32Endian(uint32_t value);
 
-struct MidiEvent ReadMidiEvent(uint8_t* buffer);
+struct MidiEvent ReadMidiEvent(uint8_t** buffer);
 
 struct __attribute__((packed)) MidiHeaderChunk
 {
@@ -88,7 +102,7 @@ struct __attribute__((packed)) MidiTrackChunk
 {
     uint32_t trackChunkId;
     uint32_t trackChunkSize;
-    MidiEvent events[512];
+    // MidiEvent events[512];
     uint16_t eventCount;
 
     uint8_t* LoadTrack(uint8_t* buffer)
@@ -106,7 +120,7 @@ struct __attribute__((packed)) MidiTrackChunk
         eventCount = 0;
         while (p < buffer + trackChunkSize)
         {
-            events[eventCount] = ReadMidiEvent(&p);
+            // events[eventCount] = ReadMidiEvent(&p);
         }
         printf("Number of events: %d\n", eventCount);
     }
@@ -174,7 +188,50 @@ private:
         printf("Delta Time extracted as: 0x%x\n", dt);
         me.deltaTimes = dt;
 
-        // TODO: eventType
+        /* 
+            EXPLAIN: 
+            eventType (4-bit) and midiChannel (4-bit)
+        */
+        uint8_t nextByte = *(*((uint8_t**)buffer));
+        me.eventType = nextByte >> 4;
+        me.midiChannel = nextByte & 0x0F;
+        (*buffer) += 1;
+
+        /*
+            EXPLAIN:
+            Lots and lots of different cases...
+            https://github.com/colxi/midi-parser-js/wiki/MIDI-File-Format-Specifications
+
+            Event Type 	        Value 	    Parameter 1 	    Parameter 2
+            Note Off 	        0x8 	note number 	        velocity
+            Note On 	        0x9 	note number 	        velocity
+            Note Aftertouch 	0xA 	note number 	        aftertouch value
+            Controller 	        0xB 	controller number 	    controller value
+            Program Change 	    0xC 	program number 	        not used
+            Channel Aftertouch 	0xD 	aftertouch value 	    not used
+            Pitch Bend 	        0xE 	pitch value (LSB) 	    pitch value (MSB
+        */
+        switch (me.eventType)
+        {
+            case (MIDI_EVENT_NOTE_OFF):
+            case (MIDI_EVENT_NOTE_ON):
+            case (MIDI_EVENT_NOTE_AFTERTOUCH):
+            case (MIDI_EVENT_CONTROLLER):
+            case (MIDI_EVENT_PITCH_BEND):
+            {
+                me.para1 = *(*((uint8_t**)buffer));
+                (*buffer) += 1;
+                me.para2 = *(*((uint8_t**)buffer));
+                (*buffer) += 1;
+                break;
+            }
+            case (MIDI_EVENT_PROGRAM_CHANGE):
+            case (MIDI_EVENT_CHANNEL_AFTERTOUCH):
+            {
+                me.para1 = *(*((uint8_t**)buffer));
+                (*buffer) += 1;
+            }
+        }
 
         return me;
     }
@@ -236,8 +293,9 @@ int main()
     buffer = headerChunk.LoadHeader(buffer);
 
     uint8_t test[3] = {0x81, 0x48, 0x90};
+    uint8_t* pTest = test;
 
-    ReadMidiEvent(test);
+    ReadMidiEvent(&pTest);
 
     return 0;
 }
@@ -252,7 +310,7 @@ uint32_t Swap32Endian(uint32_t value)
     return ((value & 0xFF) << 24) | (((value >> 8) & 0xFF) << 16) | (((value >> 16) & 0xFF) << 8) | (value >> 24);
 }
 
-struct MidiEvent ReadMidiEvent(uint8_t* buffer)
+struct MidiEvent ReadMidiEvent(uint8_t** buffer)
 {
     /*
         buffer should point to the first byte of the first midi event (of a track chunk)
@@ -298,7 +356,7 @@ struct MidiEvent ReadMidiEvent(uint8_t* buffer)
     uint32_t dt = 0;
     while (true)
     {
-        uint8_t byte = *((uint8_t*)buffer);
+        uint8_t byte = *(*((uint8_t**)buffer));
         
         dt = dt << 7;
         dt += (byte & 0x7F);
@@ -308,7 +366,7 @@ struct MidiEvent ReadMidiEvent(uint8_t* buffer)
             break;
         }
 
-        buffer += 1;
+        (*buffer) += 1;
     }
 
     printf("Delta Time extracted as: 0x%x\n", dt);
