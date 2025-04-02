@@ -3,8 +3,9 @@
 
 # add back source/header under ./src
 !/src/
-!/src/*.cpp
-!/src/*.hpp
+!/src/lc3vm/
+!/src/lc3vm/*.cpp
+!/src/lc3vm/*.hpp
 !/src/*.asm
 !/src/memory_editor
 !/src/memory_editor/*.cpp
@@ -16,7 +17,8 @@
 !/libs/
 !/libs/**
 !/include/
-!/include/*.hpp
+!/include/lc3vm/
+!/include/lc3vm/*.hpp
 !/include/memory_editor
 !/include/memory_editor/*.hpp
 !/include/midi_player
