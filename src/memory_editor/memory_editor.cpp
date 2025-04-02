@@ -124,7 +124,7 @@ void MemoryEditor::Draw()
     
     drawList = ImGui::GetForegroundDrawList();
 
-    if (ImGui::Begin("Memory Editor Window", nullptr, ImGuiWindowFlags_None))
+    if (ImGui::Begin("Memory Editor Window", nullptr, ImGuiWindowFlags_NoCollapse))
     {
         /* 
             EXPLAIN: 
@@ -182,7 +182,7 @@ void MemoryEditor::Draw()
             Get the Cursor X to draw the last line of ASCII if bufferSize does not divide 16,
             in that case we need to move Cursor X to the same X position
         */
-        ImVec2 asciiPos = ImGui::GetCursorScreenPos();
+        ImVec2 asciiPos = ImGui::GetCursorPos();
         ImGui::Text("        ASCII     ");
 
         ImGui::PopStyleColor();
@@ -318,7 +318,8 @@ void MemoryEditor::Draw()
 
             if ((i % 16 == 15) || (i == bufferSize - 1))
             {
-                ImVec2 moveToASCIIPos = ImVec2(asciiPos.x, ImGui::GetCursorScreenPos().y);
+                // Do not use ImGui::GetCursorScreenPos(), otherwise it messes up when window moves
+                ImVec2 moveToASCIIPos = ImVec2(asciiPos.x, ImGui::GetCursorPos().y);
                 ImGui::SetCursorPos(moveToASCIIPos);
                 ImGui::Text(" ");
                 int64_t leftIndex = (i / 16) * 16;
@@ -383,9 +384,13 @@ void MemoryEditor::Draw()
         ImGui::PopStyleColor();
     }
 
-    DrawScrollBar(drawList, ImVec2(848, 44), ImVec2(872, 680));
+    ImVec2 winPos = ImGui::GetWindowPos();
+    ImVec2 scrollbarMin = ImVec2(winPos.x + 848.0f, winPos.y + 44.0f);
+    ImVec2 scrollbarMax = ImVec2(winPos.x + 872.0f, winPos.y + 680.0f);
 
-    DrawScrollBarSlider(drawList, ImVec2(848, 44), ImVec2(872, 680));
+    DrawScrollBar(drawList, scrollbarMin, scrollbarMax);
+
+    DrawScrollBarSlider(drawList, scrollbarMin, scrollbarMax);
 
     ImGui::Separator();
 

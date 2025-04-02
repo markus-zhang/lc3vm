@@ -270,3 +270,9 @@ Right now the borders of the ASCII look a little bit broken but I guess I'm OK w
 ### 2025-03-19
 
 + Thinking about the meta language
+
+### 2025-04-01
+
+* Restructured the project
+
++ I'm going to switch to a new emulator project instead of writing the hex editor at the moment. Not very motivated.
