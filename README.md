@@ -276,3 +276,9 @@ Right now the borders of the ASCII look a little bit broken but I guess I'm OK w
 * Restructured the project
 
 + I'm going to switch to a new emulator project instead of writing the hex editor at the moment. Not very motivated.
+
+### 2025-04-02
+
+OK I think I got into another round of burn-out. I don't think the Z80 is a particularly tough CPU to emulate, and I have just started to write some code for the registers, but somehow I just couldn't muster enough motivation to write another line of code.
+
+And a few weeks ago I had enough motivation to fight ImGui. Damn, guess I'm just not cut to do these kind of things in the long-term.

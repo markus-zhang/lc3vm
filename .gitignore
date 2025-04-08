@@ -11,6 +11,8 @@
 !/src/memory_editor/*.cpp
 !/src/midi_player
 !/src/midi_player/*.cpp
+!/src/z80vm
+!/src/z80vm/*.cpp
 
 # add back other folders
 !/assets/
