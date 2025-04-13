@@ -448,7 +448,7 @@ op_ld0x01()
         Read the 2nd byte into B and the 3nd byte into C
     */
 
-    R_PC += 3;
+    R_PC += (z80Instr[1].instrSize);
 }
 
 void
