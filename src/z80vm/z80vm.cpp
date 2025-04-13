@@ -320,7 +320,7 @@ instr z80Instr[256] = {
 
 // TODO: Modify to adapt Z80 (256 instructions!)
 void (*instr_call_table[])(int) = {
-	&op_br, &op_add, &op_ld, &op_st, &op_jsr, &op_and, &op_ldr, &op_str, 
+	&op_nop, &op_add, &op_ld, &op_st, &op_jsr, &op_and, &op_ldr, &op_str, 
 	&op_rti, &op_not, &op_ldi, &op_sti, &op_jmp, &op_res, &op_lea, &op_trap
 };
 
@@ -349,7 +349,7 @@ run_op(uint8_t* memory, uint32_t address)
 
     while (true)
     {
-        cycleAccumulated += execute_op(memory, &address);
+        cycleAccumulated += execute_op(memory);
         if (cycleAccumulated >= CYCLE_ADJUST)
         {
             cycleAccumulated = 0;
@@ -380,20 +380,83 @@ wait(long startTime)
 }
 
 int
-execute_op(uint8_t* memory, uint32_t* address)
+execute_op(uint8_t* memory)
 {
     /*
-        Read memory from address, get one operation, execute it, return number of cycles spent
+        Read memory from address, use R_PC to read one operation, execute it, return number of cycles spent.
+        Instruction functions should increment R_PC accordingly.
 
         Pseudo code:
 
-        op = memory[(*address)];
-        instr_call_table(op);
-        (*address) += (z80Instr[op]).instrSize
+        firstByte = memory[R_PC];
+        switch (firstByte)
+        {        
+            case (0xCB):
+            {
+                op = memory[R_PC + 1];
+                instr_call_table_cb(op);
+                break;
+            }
+            case (0xDD):
+            {
+                op = memory[R_PC + 1];
+                instr_call_table_dd(op);
+                break;
+            }
+            case (0xED):
+            {
+                op = memory[R_PC + 1];
+                instr_call_table_ed(op);
+                break;
+            }
+            case (0xFD):
+            {
+                op = memory[R_PC + 1];
+                instr_call_table_fd(op);
+                break;
+            }
+            default:
+            {
+                instr_call_table(firstByte);
+                break;
+            }
+        }
 
         return (z80Instr[op]).cycles
     */
 
     // TODO: Implement this function based on the pseudo code
     return 0;
+}
+
+void
+op_nop0x00()
+{
+    /*
+        Increment PC by 1
+    */
+    
+    R_PC += (z80Instr[0].instrSize);
+}
+
+void
+op_ld0x01()
+{
+    /*
+        ld bc, nn: bc <- nn
+        First byte is 0x01 (op)
+        Read the 2nd byte into B and the 3nd byte into C
+    */
+
+    R_PC += 3;
+}
+
+void
+op_ld0x02()
+{
+    /*
+        ld (bc), a: (bc) <- a
+        Load a into memory address 16-bit combo bc points to
+        memory[bc] = a
+    */
 }
