@@ -9,6 +9,9 @@ BUILD_DIR_LC3VM := build/lc3vm
 BUILD_DIR_MEMORY_EDITOR := build/memory_editor
 BUILD_DIR_IMGUI := build/imgui
 
+SRC_DIR_CLOX := src/clox
+INCLUDE_DIR_MEMORY_EDITOR := src/clox
+
 # Compiler and flags
 CXX := g++
 

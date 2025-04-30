@@ -29,6 +29,8 @@
 !/include/memory_editor/*.hpp
 !/include/midi_player
 !/include/midi_player/*.hpp
+!/include/clox
+!/include/clox/*.h
 
 # add back binary
 !*.obj
