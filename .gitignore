@@ -13,6 +13,10 @@
 !/src/midi_player/*.cpp
 !/src/z80vm
 !/src/z80vm/*.cpp
+!/src/clox
+!/src/clox/*.c
+!/src/clox/*.h
+
 
 # add back other folders
 !/assets/
