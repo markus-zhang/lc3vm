@@ -5,10 +5,10 @@
 #define CAPACITY_MIN 0x100
 
 #define GROW_CAPACITY(capacity) \
-    ((capacity) < CAPACITY_MIN ? CAPACITY_MIN : (capacity) * 2)
+    ((capacity) < (CAPACITY_MIN) ? (CAPACITY_MIN) : (capacity) * 2)
 
 #define GROW_ARRAY(type, pointer, oldCount, newCount) \
-    (type*)reallocate(pointer, oldCount * sizeof(type), newCount * sizeof(type))
+    (type*)reallocate(pointer, (oldCount) * sizeof(type), (newCount) * sizeof(type))
 
 #define FREE_ARRAY(type, pointer, oldCount) \
     reallocate(pointer, (oldCount) * sizeof(type), 0)

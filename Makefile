@@ -9,8 +9,6 @@ BUILD_DIR_LC3VM := build/lc3vm
 BUILD_DIR_MEMORY_EDITOR := build/memory_editor
 BUILD_DIR_IMGUI := build/imgui
 
-SRC_DIR_CLOX := src/clox
-INCLUDE_DIR_MEMORY_EDITOR := src/clox
 
 # Compiler and flags
 CXX := g++
@@ -101,3 +99,38 @@ clean_lc3vm:
 .PHONY: clean_me
 clean_me:
 	rm -rf $(BUILD_DIR_MEMORY_EDITOR) $(TARGET_MEMORY_EDITOR)
+
+#################### CLOX ############################
+
+SRC_DIR_CLOX := src/clox
+INCLUDE_DIR_CLOX := include/clox
+BUILD_DIR_CLOX := build/clox
+
+GCC := gcc
+
+GCCFLAGS := -Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wcast-align -Wstrict-prototypes -Wwrite-strings -Wcast-qual -Wconversion -Wunreachable-code -g -O0
+
+TARGET_CLOX := clox
+
+SRC_FILES_CLOX := $(wildcard $(SRC_DIR_CLOX)/*.c)
+OBJ_FILES_CLOX := $(patsubst $(SRC_DIR_CLOX)/%.c, $(BUILD_DIR_CLOX)/%.o, $(SRC_FILES_CLOX))
+
+# objective files
+$(BUILD_DIR_CLOX)/%.o: $(SRC_DIR_CLOX)/%.c
+	@mkdir -p $(BUILD_DIR_CLOX)
+	$(GCC) $(GCCFLAGS) -I$(INCLUDE_DIR_CLOX) -c $< -o $@
+
+# link objective files
+$(TARGET_CLOX): $(OBJ_FILES_CLOX)
+	$(GCC) -o $(TARGET_CLOX) $(OBJ_FILES_CLOX)
+
+.PHONY: run_clox
+run_clox: $(TARGET_CLOX)
+		  ./$(TARGET_CLOX)
+
+.PHONY: build_clox
+build_clox: $(TARGET_CLOX)
+
+.PHONY: clean_clox
+clean_clox:
+	rm -rf $(BUILD_DIR_CLOX) $(TARGET_CLOX)

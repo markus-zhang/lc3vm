@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "memory.h"
 
@@ -19,7 +20,7 @@ void* reallocate(void* pointer, size_t oldSize, size_t newSize)
     void* temp = realloc(pointer, newSize);
     if (temp == NULL)
     {
-        printf("At %s, line %d\n: realloc() failed", __FILE__, __LINE__);
+        printf("At %s, line %d: realloc() failed\n", __FILE__, __LINE__);
         exit(1);
     }
     /* Note that pointer is not touched */
